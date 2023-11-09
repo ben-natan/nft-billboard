@@ -1,11 +1,9 @@
 import logo from './logo.svg';
 import './App.css';
-import contract from './contracts/nft-billboard.json';
+
 import { useEffect, useState } from 'react';
 import Canvas from "./Canvas"
 
-// const contractAddress = '';
-// const abi = contract.abi;
 
 function App() {
   const [currentAccount, setCurrentAccount] = useState(null);
