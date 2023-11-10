@@ -4,6 +4,7 @@ import './App.css';
 import { useEffect, useState } from 'react';
 import Canvas from "./Canvas"
 
+export const contractAddress = '';
 
 function App() {
   const [currentAccount, setCurrentAccount] = useState(null);
@@ -45,7 +46,7 @@ function App() {
 
   }
 
-  const connectWalletButton = () => {
+  const ConnectWalletButton = () => {
     return (
       <button onClick={connectWalletHandler}>
         Connect Wallet
@@ -64,7 +65,7 @@ function App() {
       <header className="App-header">
         <img src={logo} className="App-logo" alt="logo" />
         <div>
-          {currentAccount ? <Canvas /> : connectWalletButton()}
+          {currentAccount ? <Canvas /> : <ConnectWalletButton />}
         </div>
       </header>
     </div>

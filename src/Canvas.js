@@ -1,27 +1,27 @@
-import { ethers } from "ethers";
 import contract from './contracts/nft-billboard.json';
+import { contractAddress } from "./App";
+import { ethers } from 'ethers';
 
-
-const contractAddress = '';
 const abi = contract.abi;
 
 export default function Canvas() {
 
-    // TODO
+    // TODO: this is just an example
     const mintHandler = async () => {
         try {
             const { ethereum } = window;
 
             if (ethereum) {
-                const provider = new ethers.providers.Web3Provider(ethereum);
-                const signer = provider.getSigner();
+                // TODO: move this out of func to make it global if needed more than once
+                const provider = new ethers.BrowserProvider(ethereum);
+                const signer = await provider.getSigner();
                 const billboardContract = new ethers.Contract(contractAddress, abi, signer);
 
-                let txn = await billboardContract.mint(); // TODO
+                let tx = await billboardContract.mint(); // TODO: implement mint() in the contract
 
-                await txn.wait();
+                await tx.wait();
 
-                console.log("Mined transaction: ", txn.hash);
+                console.log("Mined transaction: ", tx.hash);
             } else {
                 console.error("Ethereum object does not exist");
             }
@@ -30,11 +30,20 @@ export default function Canvas() {
         }
     }
 
+    const MintButton = () => {
+        return (
+            <button onClick={mintHandler}>
+                Mint
+            </button>
+        )
+    }
+
     return (
         <div>
           <p>
             The canvas
           </p>
+          <MintButton />
         </div>
     );
 }
