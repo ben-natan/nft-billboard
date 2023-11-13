@@ -1,0 +1,17 @@
+:root {
+    --num-cols: 30;
+    --num-rows: 21;
+    --cell-width: 46px;
+    --cell-height: 35px;
+}
+
+.billboard {
+    display: grid;
+    grid-template: repeat(var(--num-rows), var(--cell-height)) / repeat(var(--num-cols), var(--cell-width));
+    padding: 30px;
+}
+
+.billboard-container {
+    background-color: #282c34;
+    min-height: 100vh;
+}

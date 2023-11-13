@@ -2,7 +2,7 @@ import logo from './logo.svg';
 import './App.css';
 
 import { useEffect, useState } from 'react';
-import Canvas from "./Canvas"
+import Billboard from './Billboard';
 
 export const contractAddress = '';
 
@@ -61,14 +61,9 @@ function App() {
   }, [])
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <div>
-          {currentAccount ? <Canvas /> : <ConnectWalletButton />}
-        </div>
-      </header>
-    </div>
+    <>
+      {currentAccount ? <Billboard /> : <ConnectWalletButton />}
+    </>
   );
 }
 
