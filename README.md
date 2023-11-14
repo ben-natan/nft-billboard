@@ -13,7 +13,8 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
 ## Project structure
 - `App.js` is the entry point which checks if a Metamask wallet is connected, and prompts the user to connect if it's not the case
-- `Billboard.js` is the actual app which interacts with the Ethereum contract
+- `Billboard.js` is the actual billboard which interacts with the Ethereum contract and display the images
+- `MintModal.js` is a form which interacts with the Ethereum contract to mint a cell
 
 
 <!-- ## Available Scripts
