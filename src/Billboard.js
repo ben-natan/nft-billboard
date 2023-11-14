@@ -65,11 +65,7 @@ function Cell(props) {
                 <img src="https://dummyimage.com/800x700/46bfb3/fff&text=adri"
                 alt={props.index}
                 style={{maxWidth: "100%", border: 0, cursor: 'default'}}
-                onClick={
-                    () => {
-                        console.log("OPENING");
-                        props.openMintModal();
-                    }}
+                onClick={props.openMintModal}
                 />
             </>
     )
@@ -101,10 +97,10 @@ export default function Billboard() {
 
     return (
         <div className="billboard-container" onMouseMove={(ev)=> handleMouseMove(ev)}>
-            <div className="billboard" onClick={() => {console.log("OUI")}}>
+            <div className="billboard">
                 {cells.map((c, i) => <Cell key={i} index={i} openMintModal={openMintModal}/>)}
             </div>
-            <Tooltip mousePosition={mousePosition} onClick={() => { console.log("TOOLTIP"); openMintModal(); }}/>
+            <Tooltip mousePosition={mousePosition}/>
             <Modal
                 isOpen={mintModalIsOpen}
                 onRequestClose={closeMintModal}
