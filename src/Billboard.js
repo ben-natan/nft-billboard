@@ -46,9 +46,18 @@ function Tooltip(props) {
     }
 
     return (
-        <div style={{height: TOOLTIP_HEIGHT + "px", width: TOOLTIP_WIDTH + "px", left, top, display: tooltipVisible(props.mousePosition) ? 'flex' : 'none', backgroundColor: 'black', position: 'absolute', cursor: 'default'}}>
+        <div style={{height: TOOLTIP_HEIGHT + "px", width: TOOLTIP_WIDTH + "px", left, top,
+                    display: tooltipVisible(props.mousePosition) ? 'flex' : 'none',
+                    backgroundColor: '#282c34', position: 'absolute', cursor: 'default',
+                    border: "5px ridge rgba(211, 220, 50, .6)",
+                    padding: "5px",
+                    flexDirection: "column",
+                    justifyContent: "start",
+                    fontSize: "12px"}}>
             {/* TODO: fetch informations */}
-            <p style={{color: "white"}}>cell number {getCellNumber(props.mousePosition)} minted by ??? for ??? ETH</p>
+            <p style={{position: 'absolute', top: "-10px", right: "10px", color: "red", fontSize: "16px"}}>#{getCellNumber(props.mousePosition)}</p>
+            <p style={{marginTop: "30px", marginBottom: 0, color: 'white'}}>Owner: 0x00000000000000</p>
+            <p style={{marginTop: "10px", color: 'white'}}>Last minted for: 0.34 ETH </p>
         </div>
     )
 }
