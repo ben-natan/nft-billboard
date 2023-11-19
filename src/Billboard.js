@@ -1,51 +1,61 @@
-import { useState } from 'react';
+import { clear } from '@testing-library/user-event/dist/clear';
+import { useEffect, useState, useRef } from 'react';
 import Modal from 'react-modal';
 import "./Billboard.css"
 import MintModal from './MintModal';
 
-const NUM_COLS = 30
-const NUM_ROWS = 21
-const IMAGE_WIDTH = 46 // px
-const IMAGE_HEIGHT = 35 // px
-const BILLBOARD_PADDING = 30 // px
+const SELECTION_STATES = {
+    None: "None",
+    SelectFirstCorner: "SelectFirstCorner",
+    SelectSecondCorner: "SelectSecondCorner",
+    Review: "Review",
+}
+
+const NUM_COLS = 1300
+const NUM_ROWS = 1000
+const CELL_WIDTH = 10 // px
+const CELL_HEIGHT = 10 // px
 const TOOLTIP_WIDTH = 200 // px
 const TOOLTIP_HEIGHT = 80 // px
 
-const emptyBillboard = Array.from(Array(630).keys());
-
-const tooltipVisible = (mousePosition) => {
-    if (mousePosition.left < BILLBOARD_PADDING || mousePosition.left > BILLBOARD_PADDING +  NUM_COLS * IMAGE_WIDTH) {
-        return false;
-    }
-
-    if (mousePosition.top < BILLBOARD_PADDING || mousePosition.top > BILLBOARD_PADDING + NUM_ROWS * IMAGE_HEIGHT) {
-        return false;
-    }
-
-    return true;
+const nft1Arr = new Uint8ClampedArray(110 * 110 * 4);
+for (let i = 0; i < nft1Arr.length; i += 4) {
+    nft1Arr[i + 0] = 0; // R value
+    nft1Arr[i + 1] = 190; // G value
+    nft1Arr[i + 2] = 0; // B value
+    nft1Arr[i + 3] = 255; // A value
+}
+const nft1ImageData = new ImageData(nft1Arr, 110)
+const nft1 = {
+    startX: 0,
+    startY: 0,
+    endX: 110,
+    endY: 110,
+    imageData: nft1ImageData,
 }
 
-const getCellNumber = (mousePosition) => {
-    const kX = Math.floor((mousePosition.left - BILLBOARD_PADDING) / IMAGE_WIDTH);
-    const kY = Math.floor((mousePosition.top - BILLBOARD_PADDING) / IMAGE_HEIGHT);
-    return kX + NUM_COLS * kY;
+const nft2Arr = new Uint8ClampedArray(400 * 300 * 4);
+for (let i = 0; i < nft2Arr.length; i += 4) {
+    nft2Arr[i + 0] = 180; // R value
+    nft2Arr[i + 1] = 0; // G value
+    nft2Arr[i + 2] = 0; // B value
+    nft2Arr[i + 3] = 255; // A value
 }
+const nft2ImageData = new ImageData(nft2Arr, 400, 300)
+const nft2 = {
+    startX: 300,
+    startY: 0,
+    endX: 1400,
+    endY: 300,
+    imageData: nft2ImageData,
+}
+
+const nfts = [nft1, nft2]
 
 function Tooltip(props) {
-    let left = props.mousePosition.left + 5;
-    let top = props.mousePosition.top + 5;
-
-    if (left > BILLBOARD_PADDING +  (NUM_COLS - 8) * IMAGE_WIDTH) {
-        left -= TOOLTIP_WIDTH + 30;
-    }
-
-    if (top > BILLBOARD_PADDING +  (NUM_ROWS - 5) * IMAGE_HEIGHT) {
-        top -= TOOLTIP_HEIGHT + 30;
-    }
-
     return (
-        <div style={{height: TOOLTIP_HEIGHT + "px", width: TOOLTIP_WIDTH + "px", left, top,
-                    display: tooltipVisible(props.mousePosition) ? 'flex' : 'none',
+        <div style={{height: TOOLTIP_HEIGHT + "px", width: TOOLTIP_WIDTH + "px",
+                    display: 'flex',
                     backgroundColor: '#282c34', position: 'absolute', cursor: 'default',
                     border: "5px ridge rgba(211, 220, 50, .6)",
                     padding: "5px",
@@ -53,55 +63,154 @@ function Tooltip(props) {
                     justifyContent: "start",
                     fontSize: "12px"}}>
             {/* TODO: fetch informations */}
-            <p style={{position: 'absolute', top: "-10px", right: "10px", color: "red", fontSize: "16px"}}>#{getCellNumber(props.mousePosition)}</p>
+            <p style={{position: 'absolute', top: "-10px", right: "10px", color: "red", fontSize: "16px"}}>
+                #{props.selectedPixel}
+            </p>
             <p style={{marginTop: "30px", marginBottom: 0, color: 'white'}}>Owner: 0x00000000000000</p>
             <p style={{marginTop: "10px", color: 'white'}}>Last minted for: 0.34 ETH </p>
         </div>
     )
 }
 
-function Cell(props) {
-    return (<>
-                <img src="https://dummyimage.com/800x700/46bfb3/fff&text=adri"
-                alt={props.index}
-                style={{maxWidth: "100%", border: 0, cursor: 'default'}}
-                onClick={props.openMintModal}
-                />
-            </>
-    )
-}
-
 Modal.setAppElement(document.getElementById('root'));
 export default function Billboard() {
+    const cvRef = useRef(null);
+    const cursorRef = useRef(null);
+
     // TODO: fetch cells when rendering the page (useEffect)
-    const [cells, setCells] = useState(emptyBillboard);
-    const [mousePosition, setMousePosition] = useState({
-        left: 0,
-        top: 0,
-    })
+    useEffect(() => {
+        drawBillboard();
+        drawGrid();
+    });
+
     const [mintModalIsOpen, setIsOpen] = useState(false);
-    const [selectedCell, setSelectedCell] = useState(null);
+    const [selectedPixelFirstCorner, setSelectedPixelFirstCorner] = useState(null);
+    const [selectedPixelSecondCorner, setSelectedPixelSecondCorner] = useState(null);
+    const [selectionOrigin, setSelectionOrigin] = useState(null);
+    const [selectionState, setSelectionState] = useState(SELECTION_STATES.None);
+    const [currentSelection, setCurrentSelection] = useState(null);
+
+    const [selecting, setSelecting] = useState(false);
+    const [doneSelecting, setDoneSelecting] = useState(false);
+
+    const onSelectPixel = (ev) => {
+        if (selectionState == SELECTION_STATES.None) {
+            return;
+        }
+
+        const canvas = cvRef.current;
+        const bounding = canvas.getBoundingClientRect();
+        const x = Math.floor(ev.clientX - bounding.left);
+        const y = Math.floor(ev.clientY - bounding.top);
+
+        if (selectionState == SELECTION_STATES.SelectFirstCorner) {
+            console.log("ICI")
+            setSelectedPixelFirstCorner({x, y});
+            drawFirstSelectedPixel({x, y});
+            setSelectionState(SELECTION_STATES.SelectSecondCorner);
+            return;
+        }
+
+        if (selectionState == SELECTION_STATES.SelectSecondCorner || selectionState == SELECTION_STATES.Review) {
+            setSelectedPixelSecondCorner({x, y});
+            drawSelection({x, y});
+            setSelectionState(SELECTION_STATES.Review);
+            return;
+        }
+    }
+
+    const drawFirstSelectedPixel = (pixel) => {
+        const c = cvRef.current;
+        const ctx = c.getContext("2d");
+        const imageData = ctx.createImageData(1, 1);
+        imageData.data[0] = 0;
+        imageData.data[1] = 0;
+        imageData.data[2] = 180;
+        imageData.data[3] = 255;
+        console.log({selectedPixelFirstCorner})
+        ctx.putImageData(imageData, pixel.x, pixel.y);
+    }
+
+    const drawSelection = (secondCornerPixel) => {
+        const c = cvRef.current;
+        const ctx = c.getContext("2d");
+
+        if (currentSelection) {
+            console.log({currentSelection});
+            ctx.clearRect(currentSelection.x, currentSelection.y, currentSelection.width, currentSelection.height);
+        }
+
+
+        ctx.strokeStyle = "blue";
+        ctx.beginPath();
+        ctx.rect(selectedPixelFirstCorner.x, selectedPixelFirstCorner.y,secondCornerPixel.x - selectedPixelFirstCorner.x, secondCornerPixel.y - selectedPixelFirstCorner.y);
+        ctx.stroke();
+
+        setCurrentSelection({
+            x: selectedPixelFirstCorner.x,
+            y: selectedPixelFirstCorner.y,
+            width: secondCornerPixel.x - selectedPixelFirstCorner.x,
+            height: secondCornerPixel.y - selectedPixelFirstCorner.y,
+        })
+    }
 
     function openMintModal() {
         setIsOpen(true);
-        setSelectedCell(getCellNumber(mousePosition));
     }
 
     function closeMintModal() {
         setIsOpen(false);
     }
 
-    const handleMouseMove = (ev) => {
-        setMousePosition({ left: ev.pageX, top: ev.pageY });
+    const drawBillboard = () => {
+        const c = cvRef.current;
+        const ctx = c.getContext("2d");
+        for (let i = 0; i < nfts.length; i++) {
+            ctx.putImageData(nfts[i].imageData, nfts[i].startX, nfts[i].startY);
+        }
+    }
+
+    const drawGrid = () => {
+        const c = cvRef.current;
+        const ctx = c.getContext("2d");
+        ctx.beginPath();
+        ctx.strokeStyle = "#ccc";
+
+        for (let i = 0; i < NUM_COLS; i++) {
+            ctx.moveTo(i * CELL_WIDTH, 0);
+            ctx.lineTo(i * CELL_WIDTH, NUM_ROWS);
+        }
+
+        for (let i = 0; i < NUM_ROWS; i++) {
+            ctx.moveTo(0, i * CELL_HEIGHT);
+            ctx.lineTo(NUM_COLS, i * CELL_HEIGHT);
+        }
+
+        ctx.stroke();
+    }
+
+    const updateCursorPosition = (ev) => {
+        const canvas = cvRef.current;
+        const bounding = canvas.getBoundingClientRect();
+
+        const cursorLeft = canvas.offsetLeft + ev.clientX - bounding.left - (cursorRef.current.offsetWidth / 2);
+        const cursorTop = canvas.offsetTop + ev.clientY - bounding.top - (cursorRef.current.offsetHeight / 2);
+
+        cursorRef.current.style.left = Math.floor(cursorLeft / CELL_WIDTH) * CELL_WIDTH + "px";
+        cursorRef.current.style.top = Math.floor(cursorTop / CELL_HEIGHT) * CELL_HEIGHT + "px";
     }
 
     return (
-        <div className="billboard-container" onMouseMove={(ev)=> handleMouseMove(ev)}>
-            <div className="billboard">
-                {cells.map((c, i) => <Cell key={i} index={i} openMintModal={openMintModal}/>)}
-            </div>
-            <Tooltip mousePosition={mousePosition}/>
-            <Modal
+        <div className="billboard-container">
+            <canvas id="canvas" ref={cvRef} width={NUM_COLS} height={NUM_ROWS}
+                // onClick={onSelectPixel}
+                onMouseMove={updateCursorPosition}
+                // onMouseMove={renderSelection}
+            >
+            </canvas>
+            <div id="cursor" ref={cursorRef}></div>
+            {/* <Tooltip selectedPixel={selectedPixel}/> */}
+            {/* <Modal
                 isOpen={mintModalIsOpen}
                 onRequestClose={closeMintModal}
                 contentLabel="Mint Modal"
@@ -119,7 +228,20 @@ export default function Billboard() {
                 <MintModal
                     cellNumber={selectedCell}
                 />
-            </Modal>
+            </Modal> */}
+            {/* {(selectionState == SELECTION_STATES.None) && <button onClick={() => setSelectionState(SELECTION_STATES.SelectFirstCorner)}>Mint an area</button>}
+            {(selectionState == SELECTION_STATES.SelectFirstCorner) &&
+                <>
+                    <p>Select the first corner</p>
+                    <button onClick={() => setSelectionState(SELECTION_STATES.None)}>Cancel</button>
+                </>
+            }
+            {(selectionState == SELECTION_STATES.SelectSecondCorner) &&
+                <>
+                    <p>Select the second corner</p>
+                    <button onClick={() => setSelectionState(SELECTION_STATES.None)}>Cancel</button>
+                </>
+            } */}
         </div>
     );
 }
