@@ -4,12 +4,6 @@
     --cell-width: 10px;
     --cell-height: 10px;
 }
-/*
-.billboard {
-    display: grid;
-    grid-template: repeat(var(--num-rows), var(--cell-height)) / repeat(var(--num-cols), var(--cell-width));
-    padding: 5vh;
-} */
 
 .billboard-container {
     display: flex;
@@ -20,6 +14,7 @@
 
 #canvas {
     cursor: none;
+    margin-bottom: 10vh;
 }
 
 #cursor {

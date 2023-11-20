@@ -1,10 +1,8 @@
-import { clear } from '@testing-library/user-event/dist/clear';
 import { useEffect, useState, useRef } from 'react';
-import Modal from 'react-modal';
 import "./Billboard.css"
-import MintModal from './MintModal';
+import BottomMenu from './BottomMenu';
 
-const SELECTION_STATES = {
+export const SELECTION_STATES = {
     None: "None",
     Selecting: "Selecting",
     Done: "Done",
@@ -12,10 +10,12 @@ const SELECTION_STATES = {
 
 const NUM_COLS = 1300
 const NUM_ROWS = 1000
-const CELL_WIDTH = 10 // px
-const CELL_HEIGHT = 10 // px
+export const CELL_WIDTH = 10 // px
+export const CELL_HEIGHT = 10 // px
 const TOOLTIP_WIDTH = 200 // px
 const TOOLTIP_HEIGHT = 80 // px
+export const BOTTOM_MENU_WIDTH = 300 // px
+export const BOTTOM_MENU_HEIGHT = 80 // px
 
 const nft1Arr = new Uint8ClampedArray(110 * 110 * 4);
 for (let i = 0; i < nft1Arr.length; i += 4) {
@@ -71,28 +71,17 @@ function Tooltip(props) {
     )
 }
 
-Modal.setAppElement(document.getElementById('root'));
 export default function Billboard() {
     const cvRef = useRef(null);
     const cursorRef = useRef(null);
 
-    // TODO: fetch cells when rendering the page (useEffect)
     useEffect(() => {
         drawBillboard();
         drawGrid();
     }, []);
 
-    const [mintModalIsOpen, setIsOpen] = useState(false);
     const [selectionState, setSelectionState] = useState(SELECTION_STATES.None);
     const [selectionCoords, setSelectionCoords] = useState(null);
-
-    function openMintModal() {
-        setIsOpen(true);
-    }
-
-    function closeMintModal() {
-        setIsOpen(false);
-    }
 
     const drawBillboard = () => {
         const c = cvRef.current;
@@ -103,7 +92,6 @@ export default function Billboard() {
     }
 
     const drawGrid = () => {
-        console.log("drawgrid");
         const c = cvRef.current;
         const ctx = c.getContext("2d");
         ctx.beginPath();
@@ -192,6 +180,50 @@ export default function Billboard() {
         setSelectionState(SELECTION_STATES.Done);
     }
 
+    const disableCursor = () => {
+        cursorRef.current.style.display = 'none';
+    }
+
+    const enableCursor = () => {
+        cursorRef.current.style.display = 'block';
+    }
+
+    const onMint = () => {
+        const x = selectionCoords.startX / CELL_WIDTH;
+        const y = selectionCoords.startY / CELL_HEIGHT;
+        const width = selectionCoords.width / CELL_WIDTH;
+        const height = selectionCoords.height / CELL_HEIGHT;
+
+        let startX = x;
+        let endX = x + width;
+        if (width < 0) {
+            const tmp = startX;
+            startX = endX;
+            endX = tmp;
+        }
+
+        let startY = y;
+        let endY = y + height;
+        if (height < 0) {
+            const tmp = startY;
+            startY = endY;
+            endY = tmp;
+        }
+
+        // TODO: send this to the chain to mint
+        console.log({ startX, startY, endX, endY });
+    }
+
+    const onClearSelection = () => {
+        setSelectionCoords(null);
+        setSelectionState(SELECTION_STATES.None);
+
+        // clear previous selection
+        clearCanvas();
+        drawBillboard();
+        drawGrid();
+    }
+
     return (
         <div className="billboard-container">
             <canvas id="canvas" ref={cvRef} width={NUM_COLS} height={NUM_ROWS}
@@ -205,39 +237,15 @@ export default function Billboard() {
                 onMouseDown={startSelection}
                 onMouseUp={endSelection}
             ></div>
+            <BottomMenu
+                onMouseEnter={disableCursor}
+                onMouseLeave={enableCursor}
+                selectionCoords={selectionCoords}
+                selectionState={selectionState}
+                onMint={onMint}
+                onClearSelection={onClearSelection}
+            />
             {/* <Tooltip selectedPixel={selectedPixel}/> */}
-            {/* <Modal
-                isOpen={mintModalIsOpen}
-                onRequestClose={closeMintModal}
-                contentLabel="Mint Modal"
-                style={{content: {
-                    top: '50%',
-                    left: '50%',
-                    right: 'auto',
-                    bottom: 'auto',
-                    marginRight: '-50%',
-                    transform: 'translate(-50%, -50%)',
-                    width: '50%',
-                    height: '50%'
-                  }}}
-                >
-                <MintModal
-                    cellNumber={selectedCell}
-                />
-            </Modal> */}
-            {/* {(selectionState == SELECTION_STATES.None) && <button onClick={() => setSelectionState(SELECTION_STATES.SelectFirstCorner)}>Mint an area</button>}
-            {(selectionState == SELECTION_STATES.SelectFirstCorner) &&
-                <>
-                    <p>Select the first corner</p>
-                    <button onClick={() => setSelectionState(SELECTION_STATES.None)}>Cancel</button>
-                </>
-            }
-            {(selectionState == SELECTION_STATES.SelectSecondCorner) &&
-                <>
-                    <p>Select the second corner</p>
-                    <button onClick={() => setSelectionState(SELECTION_STATES.None)}>Cancel</button>
-                </>
-            } */}
         </div>
     );
 }
