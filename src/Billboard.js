@@ -6,9 +6,8 @@ import MintModal from './MintModal';
 
 const SELECTION_STATES = {
     None: "None",
-    SelectFirstCorner: "SelectFirstCorner",
-    SelectSecondCorner: "SelectSecondCorner",
-    Review: "Review",
+    Selecting: "Selecting",
+    Done: "Done",
 }
 
 const NUM_COLS = 1300
@@ -81,78 +80,11 @@ export default function Billboard() {
     useEffect(() => {
         drawBillboard();
         drawGrid();
-    });
+    }, []);
 
     const [mintModalIsOpen, setIsOpen] = useState(false);
-    const [selectedPixelFirstCorner, setSelectedPixelFirstCorner] = useState(null);
-    const [selectedPixelSecondCorner, setSelectedPixelSecondCorner] = useState(null);
-    const [selectionOrigin, setSelectionOrigin] = useState(null);
     const [selectionState, setSelectionState] = useState(SELECTION_STATES.None);
-    const [currentSelection, setCurrentSelection] = useState(null);
-
-    const [selecting, setSelecting] = useState(false);
-    const [doneSelecting, setDoneSelecting] = useState(false);
-
-    const onSelectPixel = (ev) => {
-        if (selectionState == SELECTION_STATES.None) {
-            return;
-        }
-
-        const canvas = cvRef.current;
-        const bounding = canvas.getBoundingClientRect();
-        const x = Math.floor(ev.clientX - bounding.left);
-        const y = Math.floor(ev.clientY - bounding.top);
-
-        if (selectionState == SELECTION_STATES.SelectFirstCorner) {
-            console.log("ICI")
-            setSelectedPixelFirstCorner({x, y});
-            drawFirstSelectedPixel({x, y});
-            setSelectionState(SELECTION_STATES.SelectSecondCorner);
-            return;
-        }
-
-        if (selectionState == SELECTION_STATES.SelectSecondCorner || selectionState == SELECTION_STATES.Review) {
-            setSelectedPixelSecondCorner({x, y});
-            drawSelection({x, y});
-            setSelectionState(SELECTION_STATES.Review);
-            return;
-        }
-    }
-
-    const drawFirstSelectedPixel = (pixel) => {
-        const c = cvRef.current;
-        const ctx = c.getContext("2d");
-        const imageData = ctx.createImageData(1, 1);
-        imageData.data[0] = 0;
-        imageData.data[1] = 0;
-        imageData.data[2] = 180;
-        imageData.data[3] = 255;
-        console.log({selectedPixelFirstCorner})
-        ctx.putImageData(imageData, pixel.x, pixel.y);
-    }
-
-    const drawSelection = (secondCornerPixel) => {
-        const c = cvRef.current;
-        const ctx = c.getContext("2d");
-
-        if (currentSelection) {
-            console.log({currentSelection});
-            ctx.clearRect(currentSelection.x, currentSelection.y, currentSelection.width, currentSelection.height);
-        }
-
-
-        ctx.strokeStyle = "blue";
-        ctx.beginPath();
-        ctx.rect(selectedPixelFirstCorner.x, selectedPixelFirstCorner.y,secondCornerPixel.x - selectedPixelFirstCorner.x, secondCornerPixel.y - selectedPixelFirstCorner.y);
-        ctx.stroke();
-
-        setCurrentSelection({
-            x: selectedPixelFirstCorner.x,
-            y: selectedPixelFirstCorner.y,
-            width: secondCornerPixel.x - selectedPixelFirstCorner.x,
-            height: secondCornerPixel.y - selectedPixelFirstCorner.y,
-        })
-    }
+    const [selectionCoords, setSelectionCoords] = useState(null);
 
     function openMintModal() {
         setIsOpen(true);
@@ -171,6 +103,7 @@ export default function Billboard() {
     }
 
     const drawGrid = () => {
+        console.log("drawgrid");
         const c = cvRef.current;
         const ctx = c.getContext("2d");
         ctx.beginPath();
@@ -189,6 +122,13 @@ export default function Billboard() {
         ctx.stroke();
     }
 
+    const clearCanvas = () => {
+        const c = cvRef.current;
+        const ctx = c.getContext("2d");
+
+        ctx.clearRect(0, 0, c.width, c.height);
+    }
+
     const updateCursorPosition = (ev) => {
         const canvas = cvRef.current;
         const bounding = canvas.getBoundingClientRect();
@@ -198,17 +138,73 @@ export default function Billboard() {
 
         cursorRef.current.style.left = Math.floor(cursorLeft / CELL_WIDTH) * CELL_WIDTH + "px";
         cursorRef.current.style.top = Math.floor(cursorTop / CELL_HEIGHT) * CELL_HEIGHT + "px";
+
+        if (selectionState == SELECTION_STATES.Selecting) {
+            const ctx = canvas.getContext("2d");
+
+            // clear previous selection
+            clearCanvas();
+            drawBillboard();
+
+            const x = ev.clientX - bounding.left - (cursorRef.current.offsetWidth / 2);
+            let currentX = Math.floor(x / CELL_WIDTH) * CELL_WIDTH;
+
+            if (currentX >= selectionCoords.startX) {
+                currentX += CELL_WIDTH;
+            }
+
+            const y = ev.clientY - bounding.top - (cursorRef.current.offsetHeight / 2);
+            let currentY = Math.floor(y / CELL_HEIGHT) * CELL_HEIGHT;
+
+            if (currentY >= selectionCoords.startY) {
+                currentY += CELL_HEIGHT;
+            }
+
+            const width = currentX - selectionCoords.startX;
+            const height = currentY - selectionCoords.startY;
+
+            ctx.beginPath();
+            ctx.fillStyle = "red";
+            ctx.fillRect(selectionCoords.startX, selectionCoords.startY, width, height);
+            setSelectionCoords({ ...selectionCoords, width, height })
+
+            drawGrid();
+        }
+
+    }
+
+    const startSelection = (ev) => {
+        setSelectionState(SELECTION_STATES.Selecting);
+
+        const canvas = cvRef.current;
+        const bounding = canvas.getBoundingClientRect();
+
+        const x = ev.clientX - bounding.left - (cursorRef.current.offsetWidth / 2);
+        const startX = Math.floor(x / CELL_WIDTH) * CELL_WIDTH;
+
+        const y = ev.clientY - bounding.top - (cursorRef.current.offsetHeight / 2);
+        const startY = Math.floor(y / CELL_HEIGHT) * CELL_HEIGHT;
+
+        setSelectionCoords({ startX, startY });
+    }
+
+    const endSelection = (ev) => {
+        setSelectionState(SELECTION_STATES.Done);
     }
 
     return (
         <div className="billboard-container">
             <canvas id="canvas" ref={cvRef} width={NUM_COLS} height={NUM_ROWS}
-                // onClick={onSelectPixel}
                 onMouseMove={updateCursorPosition}
-                // onMouseMove={renderSelection}
+                onMouseDown={startSelection}
+                onMouseUp={endSelection}
             >
             </canvas>
-            <div id="cursor" ref={cursorRef}></div>
+            <div id="cursor"
+                ref={cursorRef}
+                onMouseDown={startSelection}
+                onMouseUp={endSelection}
+            ></div>
             {/* <Tooltip selectedPixel={selectedPixel}/> */}
             {/* <Modal
                 isOpen={mintModalIsOpen}
