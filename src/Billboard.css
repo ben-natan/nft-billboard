@@ -1,17 +1,28 @@
 :root {
-    --num-cols: 30;
-    --num-rows: 21;
-    --cell-width: 46px;
-    --cell-height: 35px;
-}
-
-.billboard {
-    display: grid;
-    grid-template: repeat(var(--num-rows), var(--cell-height)) / repeat(var(--num-cols), var(--cell-width));
-    padding: 30px;
+    --num-cols: 1300;
+    --num-rows: 1000;
+    --cell-width: 10px;
+    --cell-height: 10px;
 }
 
 .billboard-container {
-    background-color: #282c34;
-    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    padding: 10vh;
+}
+
+#canvas {
+    cursor: none;
+    margin-bottom: 10vh;
+}
+
+#cursor {
+    position: absolute;
+    width: var(--cell-width);
+    height: var(--cell-height);
+    background-color: transparent;
+    border: 1px solid black;
+    box-sizing: border-box;
+    cursor: none;
 }
