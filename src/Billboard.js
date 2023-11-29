@@ -6,6 +6,8 @@ export const SELECTION_STATES = {
     None: "None",
     Selecting: "Selecting",
     Done: "Done",
+    PickedOwnNFT: "PickedOwnNFT",
+    Drawing: "Drawing",
 }
 
 const NUM_COLS = 1300
@@ -14,8 +16,6 @@ export const CELL_WIDTH = 10 // px
 export const CELL_HEIGHT = 10 // px
 const TOOLTIP_WIDTH = 200 // px
 const TOOLTIP_HEIGHT = 80 // px
-export const BOTTOM_MENU_WIDTH = 300 // px
-export const BOTTOM_MENU_HEIGHT = 80 // px
 
 const nft1Arr = new Uint8ClampedArray(110 * 110 * 4);
 for (let i = 0; i < nft1Arr.length; i += 4) {
@@ -44,7 +44,7 @@ const nft2ImageData = new ImageData(nft2Arr, 400, 300)
 const nft2 = {
     startX: 300,
     startY: 0,
-    endX: 1400,
+    endX: 700,
     endY: 300,
     imageData: nft2ImageData,
 }
@@ -78,10 +78,13 @@ export default function Billboard() {
     useEffect(() => {
         drawBillboard();
         drawGrid();
+        setOwnNFTs(nfts);
     }, []);
 
     const [selectionState, setSelectionState] = useState(SELECTION_STATES.None);
     const [selectionCoords, setSelectionCoords] = useState(null);
+    const [ownNFTs, setOwnNFTs] = useState(null);
+    const [pickedOwnNFT, setPickedOwnNFT] = useState(null);
 
     const drawBillboard = () => {
         const c = cvRef.current;
@@ -117,6 +120,18 @@ export default function Billboard() {
         ctx.clearRect(0, 0, c.width, c.height);
     }
 
+    const getCollidingNFT = (nfts, currentX, currentY) => {
+        for (let i = 0; i < nfts.length; i++) {
+            const nft = nfts[i];
+            if (currentX >= nft.startX && currentX <= nft.endX
+                && currentY >= nft.startY && currentY <= nft.endY) {
+                    return nft;
+                }
+        }
+
+        return null;
+    }
+
     const updateCursorPosition = (ev) => {
         const canvas = cvRef.current;
         const bounding = canvas.getBoundingClientRect();
@@ -127,7 +142,11 @@ export default function Billboard() {
         cursorRef.current.style.left = Math.floor(cursorLeft / CELL_WIDTH) * CELL_WIDTH + "px";
         cursorRef.current.style.top = Math.floor(cursorTop / CELL_HEIGHT) * CELL_HEIGHT + "px";
 
+
+
         if (selectionState == SELECTION_STATES.Selecting) {
+            clearOutlineNFTs();
+
             const ctx = canvas.getContext("2d");
 
             // clear previous selection
@@ -157,13 +176,28 @@ export default function Billboard() {
             setSelectionCoords({ ...selectionCoords, width, height })
 
             drawGrid();
+        } else if (selectionState == SELECTION_STATES.None || selectionState == SELECTION_STATES.PickedOwnNFT ) {
+            clearOutlineNFTs();
+
+            if (pickedOwnNFT) {
+                outlineOneNFT(pickedOwnNFT);
+            }
+
+            const x = ev.clientX - bounding.left - (cursorRef.current.offsetWidth / 2);
+            let currentX = Math.floor(x / CELL_WIDTH) * CELL_WIDTH;
+
+            const y = ev.clientY - bounding.top - (cursorRef.current.offsetHeight / 2);
+            let currentY = Math.floor(y / CELL_HEIGHT) * CELL_HEIGHT;
+
+            const nft = getCollidingNFT(ownNFTs, currentX, currentY);
+            if (nft) {
+                outlineOneNFT(nft);
+            }
         }
 
     }
 
     const startSelection = (ev) => {
-        setSelectionState(SELECTION_STATES.Selecting);
-
         const canvas = cvRef.current;
         const bounding = canvas.getBoundingClientRect();
 
@@ -173,11 +207,29 @@ export default function Billboard() {
         const y = ev.clientY - bounding.top - (cursorRef.current.offsetHeight / 2);
         const startY = Math.floor(y / CELL_HEIGHT) * CELL_HEIGHT;
 
+        const existingOwnNFT = getCollidingNFT(ownNFTs, startX, startY);
+        if (existingOwnNFT) {
+            setPickedOwnNFT(existingOwnNFT);
+            setSelectionState(SELECTION_STATES.PickedOwnNFT);
+
+            clearOutlineNFTs();
+            outlineOneNFT(existingOwnNFT);
+
+            return;
+        }
+
+        setSelectionState(SELECTION_STATES.Selecting);
+        setPickedOwnNFT(null);
+
         setSelectionCoords({ startX, startY });
     }
 
     const endSelection = (ev) => {
+        if (selectionState != SELECTION_STATES.Selecting) {
+            return;
+        }
         setSelectionState(SELECTION_STATES.Done);
+        setPickedOwnNFT(null);
     }
 
     const disableCursor = () => {
@@ -217,8 +269,53 @@ export default function Billboard() {
     const onClearSelection = () => {
         setSelectionCoords(null);
         setSelectionState(SELECTION_STATES.None);
+        setPickedOwnNFT(null);
 
         // clear previous selection
+        clearCanvas();
+        drawBillboard();
+        drawGrid();
+    }
+
+    const outlineOneNFT = (nft) => {
+        console.log("one nft");
+        const c = cvRef.current;
+        const ctx = c.getContext("2d");
+
+        ctx.strokeStyle = "orange";
+        const oldLineWidth = ctx.lineWidth;
+        ctx.lineWidth = 5;
+        ctx.strokeRect(nft.startX, nft.startY, nft.endX - nft.startX, nft.endY - nft.startY);
+        ctx.lineWidth = oldLineWidth;
+
+        return;
+    }
+
+    const outlineMultipleNFTs = (nfts) => {
+        clearCanvas();
+
+        const c = cvRef.current;
+        const ctx = c.getContext("2d");
+
+        drawBillboard();
+        drawGrid();
+
+        ctx.strokeStyle = "orange";
+        const oldLineWidth = ctx.lineWidth;
+        ctx.lineWidth = 5;
+
+
+        for (let i = 0; i < nfts.length; i++) {
+            ctx.strokeRect(nfts[i].startX, nfts[i].startY, nfts[i].endX - nfts[i].startX, nfts[i].endY - nfts[i].startY);
+        }
+
+
+        ctx.lineWidth = oldLineWidth;
+
+        return;
+    }
+
+    const clearOutlineNFTs = () => {
         clearCanvas();
         drawBillboard();
         drawGrid();
@@ -244,6 +341,13 @@ export default function Billboard() {
                 selectionState={selectionState}
                 onMint={onMint}
                 onClearSelection={onClearSelection}
+                ownNFTs={[
+                    {startX: nft1.startX, startY: nft1.startY, endX: nft1.endX, endY: nft1.endY},
+                    {startX: nft2.startX, startY: nft2.startY, endX: nft2.endX, endY: nft2.endY}
+                ]}
+                outlineMultipleNFTs={outlineMultipleNFTs}
+                clearOutlineNFTs={clearOutlineNFTs}
+                pickedOwnNFT={pickedOwnNFT}
             />
             {/* <Tooltip selectedPixel={selectedPixel}/> */}
         </div>
