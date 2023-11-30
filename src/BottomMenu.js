@@ -1,4 +1,5 @@
-import { SELECTION_STATES, CELL_WIDTH, CELL_HEIGHT } from "./Billboard";
+import { useEffect } from "react";
+import { SELECTION_STATES, CELL_WIDTH, CELL_HEIGHT, colors } from "./Billboard";
 
 const BOTTOM_MENU_WIDTH = 300 // px
 const BOTTOM_MENU_HEIGHT = 80 // px
@@ -15,6 +16,10 @@ export default function BottomMenu(props) {
         outlineMultipleNFTs,
         clearOutlineNFTs,
         pickedOwnNFT,
+        onClickDraw,
+        onCancelDraw,
+        onSubmitDraw,
+        onPickColor,
     } = props;
 
     return (
@@ -49,6 +54,7 @@ export default function BottomMenu(props) {
                 selectionState == SELECTION_STATES.PickedOwnNFT &&
                 <>
                     <p> Picked NFT: x = {pickedOwnNFT.startX}, y = {pickedOwnNFT.startY} </p>
+                    <button onClick={onClickDraw}> Draw! </button>
                 </>
             }
             {
@@ -59,6 +65,22 @@ export default function BottomMenu(props) {
                     <button onClick={onClearSelection}>Clear</button>
                 </>
                 )
+            }
+            {
+                selectionState == SELECTION_STATES.Drawing &&
+                <div style={{display: 'flex', flexDirection: 'column'}}>
+                    <div style={{display: 'grid', gridTemplateColumns: 'auto auto auto auto auto auto auto auto'}}>
+                        {colors.map((c, i) => (
+                            <div
+                                key={i}
+                                style={{height: '30px', width: '30px', backgroundColor: c}}
+                                onClick={() => onPickColor(i)}
+                            >1</div>
+                        ))}
+                    </div>
+                    <button onClick={onCancelDraw}>Cancel</button>
+                    <button onClick={onSubmitDraw}>Submit</button>
+                </div>
             }
 
 
