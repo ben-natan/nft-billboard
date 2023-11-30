@@ -15,7 +15,6 @@ const NUM_ROWS = 1000
 export const CELL_WIDTH = 10 // px
 export const CELL_HEIGHT = 10 // px
 const TOOLTIP_WIDTH = 200 // px
-const TOOLTIP_HEIGHT = 80 // px
 
 
 const nft1 = {
@@ -63,20 +62,28 @@ function Tooltip(props) {
     const { hoveredNFT } = props;
 
     return (
-        <div style={{height: TOOLTIP_HEIGHT + "px", width: TOOLTIP_WIDTH + "px",
+        <div style={{
                     display: 'flex',
                     left,
                     top,
                     backgroundColor: '#282c34', position: 'absolute', cursor: 'default',
-                    border: "5px ridge rgba(211, 220, 50, .6)",
-                    padding: "5px",
+                    padding: "12px",
                     flexDirection: "column",
                     justifyContent: "start",
                     fontSize: "12px"}}>
             {/* TODO: fetch informations */}
-            <p style={{margin: 0, color: 'white'}}>Owner: 0x00000000000000</p>
-            <p style={{margin: 0, color: 'white'}}>Last minted for: 0.34 ETH </p>
-            <p style={{margin: 0, color: 'white'}}>{(hoveredNFT.endX - hoveredNFT.startX) / CELL_WIDTH * (hoveredNFT.endY - hoveredNFT.startY) / CELL_WIDTH} pixels</p>
+            <div style={{lineHeight: 1.5, marginBottom: "5px"}}>
+                <p style={{margin: 0, color: 'white', fontWeight: 'bold'}}>Owner:</p>
+                <p style={{margin: 0, color: 'white'}}>0x00000000000000</p>
+            </div>
+            <div style={{lineHeight: 1.5, marginTop: "5px", marginBottom: "5px"}}>
+                <p style={{margin: 0, color: 'white', fontWeight: 'bold'}}>Last minted for:</p>
+                <p style={{margin: 0, color: 'white'}}>0.34 ETH</p>
+            </div>
+            <div style={{lineHeight: 1.5, marginTop: "5px"}}>
+                <p style={{margin: 0, color: 'white', fontWeight: 'bold'}}>Size:</p>
+                <p style={{margin: 0, color: 'white'}}>{(hoveredNFT.endX - hoveredNFT.startX) / CELL_WIDTH * (hoveredNFT.endY - hoveredNFT.startY) / CELL_WIDTH} pixels</p>
+            </div>
         </div>
     )
 }
