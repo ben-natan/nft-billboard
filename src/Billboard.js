@@ -1,3 +1,4 @@
+import Panzoom from '@panzoom/panzoom';
 import { useEffect, useState, useRef } from 'react';
 import "./Billboard.css"
 import BottomMenu from './BottomMenu';
@@ -86,6 +87,10 @@ export default function Billboard() {
     const cursorRef = useRef(null);
 
     useEffect(() => {
+        const pz = Panzoom(cvRef.current, { maxScale: 5, canvas: false });
+        pz.pan(2, 2);
+        setPanzoom(pz);
+
         drawBillboard();
         drawGrid();
         setOwnNFTs(allNFTs);
@@ -108,6 +113,7 @@ export default function Billboard() {
         top: 0,
     })
     const [hoveredNFT, setHoveredNFT] = useState(null);
+    const [panzoom, setPanzoom] = useState(null);
 
     const drawBillboard = () => {
         const c = cvRef.current;
@@ -177,11 +183,13 @@ export default function Billboard() {
     }
 
     const updateCursorPosition = (ev) => {
+        const pan = panzoom?.getPan();
+
         const canvas = cvRef.current;
         const bounding = canvas.getBoundingClientRect();
 
-        const cursorLeft = canvas.offsetLeft + ev.clientX - bounding.left - (cursorRef.current.offsetWidth / 2);
-        const cursorTop = canvas.offsetTop + ev.clientY - bounding.top - (cursorRef.current.offsetHeight / 2);
+        const cursorLeft = canvas.offsetLeft + ev.clientX - bounding.left - (cursorRef.current.offsetWidth / 2) + pan.x;
+        const cursorTop = canvas.offsetTop + ev.clientY - bounding.top - (cursorRef.current.offsetHeight / 2) + pan.y;
 
         cursorRef.current.style.left = Math.floor(cursorLeft / CELL_WIDTH) * CELL_WIDTH + "px";
         cursorRef.current.style.top = Math.floor(cursorTop / CELL_HEIGHT) * CELL_HEIGHT + "px";
