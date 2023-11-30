@@ -19,9 +19,9 @@ const TOOLTIP_HEIGHT = 80 // px
 
 
 const nft1 = {
-    startX: 10,
+    startX: 1100,
     startY: 10,
-    endX: 120,
+    endX: 1210,
     endY: 120,
     data: Array(11 * 11).fill(1),
 }
@@ -52,9 +52,21 @@ export const colors = [
 ];
 
 function Tooltip(props) {
+    let { left, top } = props.mousePosition;
+    left += 10;
+    top += 10;
+
+    if (left > 2/3 * NUM_COLS) {
+        left -= TOOLTIP_WIDTH + 30;
+
+    }
+    const { hoveredNFT } = props;
+
     return (
         <div style={{height: TOOLTIP_HEIGHT + "px", width: TOOLTIP_WIDTH + "px",
                     display: 'flex',
+                    left,
+                    top,
                     backgroundColor: '#282c34', position: 'absolute', cursor: 'default',
                     border: "5px ridge rgba(211, 220, 50, .6)",
                     padding: "5px",
@@ -62,11 +74,9 @@ function Tooltip(props) {
                     justifyContent: "start",
                     fontSize: "12px"}}>
             {/* TODO: fetch informations */}
-            <p style={{position: 'absolute', top: "-10px", right: "10px", color: "red", fontSize: "16px"}}>
-                #{props.selectedPixel}
-            </p>
-            <p style={{marginTop: "30px", marginBottom: 0, color: 'white'}}>Owner: 0x00000000000000</p>
-            <p style={{marginTop: "10px", color: 'white'}}>Last minted for: 0.34 ETH </p>
+            <p style={{margin: 0, color: 'white'}}>Owner: 0x00000000000000</p>
+            <p style={{margin: 0, color: 'white'}}>Last minted for: 0.34 ETH </p>
+            <p style={{margin: 0, color: 'white'}}>{(hoveredNFT.endX - hoveredNFT.startX) / CELL_WIDTH * (hoveredNFT.endY - hoveredNFT.startY) / CELL_WIDTH} pixels</p>
         </div>
     )
 }
@@ -92,6 +102,12 @@ export default function Billboard() {
     const [currentColor, setCurrentColor] = useState(0);
     const [initialNFTs, setInitialNFTs] = useState([]);
     const [nfts, setNFTs] = useState([]);
+    const [tooltipVisible, setTooltipVisible] = useState(false);
+    const [mousePosition, setMousePosition] = useState({
+        left: 0,
+        top: 0,
+    })
+    const [hoveredNFT, setHoveredNFT] = useState(null);
 
     const drawBillboard = () => {
         const c = cvRef.current;
@@ -203,6 +219,7 @@ export default function Billboard() {
 
             drawGrid();
         } else if (selectionState == SELECTION_STATES.None || selectionState == SELECTION_STATES.PickedOwnNFT ) {
+            // Handle outlines
             clearOutlineNFTs();
 
             if (pickedOwnNFT) {
@@ -215,9 +232,25 @@ export default function Billboard() {
             const y = ev.clientY - bounding.top - (cursorRef.current.offsetHeight / 2);
             let currentY = Math.floor(y / CELL_HEIGHT) * CELL_HEIGHT;
 
-            const nft = getCollidingNFT(ownNFTs, currentX, currentY);
+            const ownNFT = getCollidingNFT(ownNFTs, currentX, currentY);
+            if (ownNFT) {
+                outlineOneNFT(ownNFT);
+            }
+
+            // Handle tooltip
+            const nft = getCollidingNFT(nfts, currentX, currentY);
             if (nft) {
-                outlineOneNFT(nft);
+                cursorRef.current.style.display = 'none';
+                cursorRef.current.style.cursor = 'default'
+                cvRef.current.style.cursor = 'default';
+                setTooltipVisible(true);
+                setMousePosition({ left: ev.pageX, top: ev.pageY });
+                setHoveredNFT(nft);
+            } else {
+                cursorRef.current.style.display = 'block';
+                cursorRef.current.style.cursor = 'none';
+                cvRef.current.style.cursor = 'none';
+                setTooltipVisible(false);
             }
         }
 
@@ -400,6 +433,7 @@ export default function Billboard() {
                 onMouseMove={updateCursorPosition}
                 onMouseDown={startSelection}
                 onMouseUp={endSelection}
+                onMouseLeave={() => setTooltipVisible(false)}s
             >
             </canvas>
             <div id="cursor"
@@ -426,7 +460,7 @@ export default function Billboard() {
                 onSubmitDraw={onSubmitDraw}
                 onPickColor={pickColor}
             />
-            {/* <Tooltip selectedPixel={selectedPixel}/> */}
+            {tooltipVisible && <Tooltip mousePosition={mousePosition} hoveredNFT={hoveredNFT}/>}
         </div>
     );
 }
