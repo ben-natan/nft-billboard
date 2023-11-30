@@ -22,10 +22,6 @@ export default function BottomMenu(props) {
         onPickColor,
     } = props;
 
-    useEffect(() => {
-        console.log({colors})
-    })
-
     return (
         <div style={{
             width: BOTTOM_MENU_WIDTH + "px",
