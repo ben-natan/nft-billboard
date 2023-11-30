@@ -17,39 +17,35 @@ export const CELL_HEIGHT = 10 // px
 const TOOLTIP_WIDTH = 200 // px
 const TOOLTIP_HEIGHT = 80 // px
 
-const nft1Arr = new Uint8ClampedArray(110 * 110 * 4);
-for (let i = 0; i < nft1Arr.length; i += 4) {
-    nft1Arr[i + 0] = 0; // R value
-    nft1Arr[i + 1] = 190; // G value
-    nft1Arr[i + 2] = 0; // B value
-    nft1Arr[i + 3] = 255; // A value
-}
-const nft1ImageData = new ImageData(nft1Arr, 110)
+
 const nft1 = {
-    startX: 0,
-    startY: 0,
-    endX: 110,
-    endY: 110,
-    imageData: nft1ImageData,
+    startX: 10,
+    startY: 10,
+    endX: 120,
+    endY: 120,
+    data: Array(11 * 11).fill(0),
 }
 
-const nft2Arr = new Uint8ClampedArray(400 * 300 * 4);
-for (let i = 0; i < nft2Arr.length; i += 4) {
-    nft2Arr[i + 0] = 180; // R value
-    nft2Arr[i + 1] = 0; // G value
-    nft2Arr[i + 2] = 0; // B value
-    nft2Arr[i + 3] = 255; // A value
+for (let i = 0; i < 11; i++) {
+    nft1.data[i] = 1;
+    nft1.data[i + 22] = 1;
+    nft1.data[i + 44] = 1;
+    nft1.data[i + 66] = 1;
+    nft1.data[i + 88] = 1;
+    nft1.data[i + 110] = 1;
 }
-const nft2ImageData = new ImageData(nft2Arr, 400, 300)
+
 const nft2 = {
     startX: 300,
     startY: 0,
     endX: 700,
     endY: 300,
-    imageData: nft2ImageData,
+    data: Array(40 * 30).fill(0),
 }
 
-const nfts = [nft1, nft2]
+let allNFTs = [nft1, nft2]
+
+const colors = ['blue', 'red', 'green'];
 
 function Tooltip(props) {
     return (
@@ -78,26 +74,55 @@ export default function Billboard() {
     useEffect(() => {
         drawBillboard();
         drawGrid();
-        setOwnNFTs(nfts);
+        setOwnNFTs(allNFTs);
+
+        // TODO: get nfts
+        setInitialNFTs(structuredClone(allNFTs));
+        setNFTs(structuredClone(allNFTs));
     }, []);
 
     const [selectionState, setSelectionState] = useState(SELECTION_STATES.None);
     const [selectionCoords, setSelectionCoords] = useState(null);
     const [ownNFTs, setOwnNFTs] = useState(null);
     const [pickedOwnNFT, setPickedOwnNFT] = useState(null);
+    const [currentColor, setCurrentColor] = useState(0);
+    const [initialNFTs, setInitialNFTs] = useState([]);
+    const [nfts, setNFTs] = useState([]);
 
     const drawBillboard = () => {
+        console.log("ici")
+        console.log({ nfts })
         const c = cvRef.current;
         const ctx = c.getContext("2d");
+
+        ctx.beginPath();
+
+        const oldFillStyle = ctx.fillStyle;
+
         for (let i = 0; i < nfts.length; i++) {
-            ctx.putImageData(nfts[i].imageData, nfts[i].startX, nfts[i].startY);
+            const startX = nfts[i].startX;
+            const startY = nfts[i].startY;
+            const width = (nfts[i].endX - nfts[i].startX) / CELL_WIDTH;
+            const height = (nfts[i].endY - nfts[i].startY) / CELL_HEIGHT;
+            const data = nfts[i].data;
+
+
+            for (let u = 0; u < width; u++) {
+                for (let v = 0; v < height; v++) {
+                    ctx.fillStyle = colors[data[u + v*width]];
+                    ctx.fillRect(startX + u * CELL_WIDTH, startY + v * CELL_HEIGHT, CELL_WIDTH, CELL_HEIGHT);
+                }
+            }
         }
+
+        ctx.fillStyle = oldFillStyle;
     }
 
     const drawGrid = () => {
         const c = cvRef.current;
         const ctx = c.getContext("2d");
         ctx.beginPath();
+        const oldStrokeStyle = ctx.strokeStyle;
         ctx.strokeStyle = "#ccc";
 
         for (let i = 0; i < NUM_COLS; i++) {
@@ -111,6 +136,7 @@ export default function Billboard() {
         }
 
         ctx.stroke();
+        ctx.strokeStyle = oldStrokeStyle;
     }
 
     const clearCanvas = () => {
@@ -202,17 +228,41 @@ export default function Billboard() {
         const bounding = canvas.getBoundingClientRect();
 
         const x = ev.clientX - bounding.left - (cursorRef.current.offsetWidth / 2);
-        const startX = Math.floor(x / CELL_WIDTH) * CELL_WIDTH;
+        const currentX = Math.floor(x / CELL_WIDTH) * CELL_WIDTH;
 
         const y = ev.clientY - bounding.top - (cursorRef.current.offsetHeight / 2);
-        const startY = Math.floor(y / CELL_HEIGHT) * CELL_HEIGHT;
+        const currentY = Math.floor(y / CELL_HEIGHT) * CELL_HEIGHT;
 
-        const existingOwnNFT = getCollidingNFT(ownNFTs, startX, startY);
+        if (selectionState == SELECTION_STATES.Drawing) {
+            if (currentX < pickedOwnNFT.startX || currentX > pickedOwnNFT.endX
+                || currentY < pickedOwnNFT.startY || currentY > pickedOwnNFT.endY)
+            {
+                return;
+            }
+
+            const nftIndex = nfts.findIndex((n) => n.startX == pickedOwnNFT.startX && n.startY == pickedOwnNFT.startY);
+            const nftWidth = (pickedOwnNFT.endX - pickedOwnNFT.startX) / CELL_WIDTH;
+            const nftX = (currentX - pickedOwnNFT.startX) / CELL_WIDTH;
+            const nftY = (currentY - pickedOwnNFT.startY) / CELL_HEIGHT;
+            const dataIndex = nftX + nftWidth * nftY;
+
+            nfts[nftIndex].data[dataIndex] = 2;
+
+            clearCanvas();
+            drawBillboard();
+            drawGrid();
+            outlineOneNFT(pickedOwnNFT);
+
+            return;
+        }
+
+        clearOutlineNFTs();
+
+        const existingOwnNFT = getCollidingNFT(ownNFTs, currentX, currentY);
         if (existingOwnNFT) {
             setPickedOwnNFT(existingOwnNFT);
             setSelectionState(SELECTION_STATES.PickedOwnNFT);
 
-            clearOutlineNFTs();
             outlineOneNFT(existingOwnNFT);
 
             return;
@@ -221,7 +271,7 @@ export default function Billboard() {
         setSelectionState(SELECTION_STATES.Selecting);
         setPickedOwnNFT(null);
 
-        setSelectionCoords({ startX, startY });
+        setSelectionCoords({ startX: currentX, startY: currentY });
     }
 
     const endSelection = (ev) => {
@@ -266,6 +316,11 @@ export default function Billboard() {
         console.log({ startX, startY, endX, endY });
     }
 
+    const onClickDraw = () => {
+        setSelectionState(SELECTION_STATES.Drawing);
+        setCurrentColor(0);
+    }
+
     const onClearSelection = () => {
         setSelectionCoords(null);
         setSelectionState(SELECTION_STATES.None);
@@ -278,13 +333,12 @@ export default function Billboard() {
     }
 
     const outlineOneNFT = (nft) => {
-        console.log("one nft");
         const c = cvRef.current;
         const ctx = c.getContext("2d");
 
         ctx.strokeStyle = "orange";
         const oldLineWidth = ctx.lineWidth;
-        ctx.lineWidth = 5;
+        ctx.lineWidth = 3;
         ctx.strokeRect(nft.startX, nft.startY, nft.endX - nft.startX, nft.endY - nft.startY);
         ctx.lineWidth = oldLineWidth;
 
@@ -302,7 +356,7 @@ export default function Billboard() {
 
         ctx.strokeStyle = "orange";
         const oldLineWidth = ctx.lineWidth;
-        ctx.lineWidth = 5;
+        ctx.lineWidth = 3;
 
 
         for (let i = 0; i < nfts.length; i++) {
@@ -319,6 +373,20 @@ export default function Billboard() {
         clearCanvas();
         drawBillboard();
         drawGrid();
+    }
+
+    const onCancelDraw = () => {
+        setSelectionState(SELECTION_STATES.None);
+        setPickedOwnNFT(null);
+        setNFTs(initialNFTs);
+        clearOutlineNFTs();
+        setCurrentColor(-1);
+    }
+
+    const onSubmitDraw = () => {
+        const nftIndex = nfts.findIndex((n) => n.startX == pickedOwnNFT.startX && n.startY == pickedOwnNFT.startY);
+        console.log({updatedNFT: nfts[nftIndex]});
+        // TODO: send, and maybe just do a diff?
     }
 
     return (
@@ -348,6 +416,9 @@ export default function Billboard() {
                 outlineMultipleNFTs={outlineMultipleNFTs}
                 clearOutlineNFTs={clearOutlineNFTs}
                 pickedOwnNFT={pickedOwnNFT}
+                onClickDraw={onClickDraw}
+                onCancelDraw={onCancelDraw}
+                onSubmitDraw={onSubmitDraw}
             />
             {/* <Tooltip selectedPixel={selectedPixel}/> */}
         </div>

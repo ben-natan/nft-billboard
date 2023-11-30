@@ -15,6 +15,9 @@ export default function BottomMenu(props) {
         outlineMultipleNFTs,
         clearOutlineNFTs,
         pickedOwnNFT,
+        onClickDraw,
+        onCancelDraw,
+        onSubmitDraw,
     } = props;
 
     return (
@@ -49,6 +52,7 @@ export default function BottomMenu(props) {
                 selectionState == SELECTION_STATES.PickedOwnNFT &&
                 <>
                     <p> Picked NFT: x = {pickedOwnNFT.startX}, y = {pickedOwnNFT.startY} </p>
+                    <button onClick={onClickDraw}> Draw! </button>
                 </>
             }
             {
@@ -59,6 +63,15 @@ export default function BottomMenu(props) {
                     <button onClick={onClearSelection}>Clear</button>
                 </>
                 )
+            }
+            {
+                selectionState == SELECTION_STATES.Drawing &&
+                <div>
+                    <p>bleu</p>
+                    <p>rouge</p>
+                    <button onClick={onCancelDraw}>Cancel</button>
+                    <button onClick={onSubmitDraw}>Submit</button>
+                </div>
             }
 
 
