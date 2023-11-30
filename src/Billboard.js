@@ -23,16 +23,16 @@ const nft1 = {
     startY: 10,
     endX: 120,
     endY: 120,
-    data: Array(11 * 11).fill(0),
+    data: Array(11 * 11).fill(1),
 }
 
 for (let i = 0; i < 11; i++) {
-    nft1.data[i] = 1;
-    nft1.data[i + 22] = 1;
-    nft1.data[i + 44] = 1;
-    nft1.data[i + 66] = 1;
-    nft1.data[i + 88] = 1;
-    nft1.data[i + 110] = 1;
+    nft1.data[i] = 4;
+    nft1.data[i + 22] = 4;
+    nft1.data[i + 44] = 4;
+    nft1.data[i + 66] = 4;
+    nft1.data[i + 88] = 4;
+    nft1.data[i + 110] = 4;
 }
 
 const nft2 = {
@@ -40,12 +40,16 @@ const nft2 = {
     startY: 0,
     endX: 700,
     endY: 300,
-    data: Array(40 * 30).fill(0),
+    data: Array(40 * 30).fill(2),
 }
 
 let allNFTs = [nft1, nft2]
 
-const colors = ['blue', 'red', 'green'];
+// Apple Macintosh default 16-color palette
+export const colors = [
+    '#ffffff', '#fcf305', '#ff6402', '#dd0806', '#f20884', '#4600a5', '#0000d4', '#02abea',
+    '#1fb714', '#006411', '#562c05', '#90713a', '#c0c0c0', '#808080', '#404040', '#000000',
+];
 
 function Tooltip(props) {
     return (
