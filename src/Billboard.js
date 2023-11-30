@@ -94,8 +94,6 @@ export default function Billboard() {
     const [nfts, setNFTs] = useState([]);
 
     const drawBillboard = () => {
-        console.log("ici")
-        console.log({ nfts })
         const c = cvRef.current;
         const ctx = c.getContext("2d");
 
@@ -171,8 +169,6 @@ export default function Billboard() {
 
         cursorRef.current.style.left = Math.floor(cursorLeft / CELL_WIDTH) * CELL_WIDTH + "px";
         cursorRef.current.style.top = Math.floor(cursorTop / CELL_HEIGHT) * CELL_HEIGHT + "px";
-
-
 
         if (selectionState == SELECTION_STATES.Selecting) {
             clearOutlineNFTs();
@@ -250,7 +246,7 @@ export default function Billboard() {
             const nftY = (currentY - pickedOwnNFT.startY) / CELL_HEIGHT;
             const dataIndex = nftX + nftWidth * nftY;
 
-            nfts[nftIndex].data[dataIndex] = 2;
+            nfts[nftIndex].data[dataIndex] = currentColor;
 
             clearCanvas();
             drawBillboard();
@@ -322,7 +318,7 @@ export default function Billboard() {
 
     const onClickDraw = () => {
         setSelectionState(SELECTION_STATES.Drawing);
-        setCurrentColor(0);
+        pickColor(0);
     }
 
     const onClearSelection = () => {
@@ -384,13 +380,18 @@ export default function Billboard() {
         setPickedOwnNFT(null);
         setNFTs(initialNFTs);
         clearOutlineNFTs();
-        setCurrentColor(-1);
+        cursorRef.current.style.backgroundColor = 'transparent';
     }
 
     const onSubmitDraw = () => {
         const nftIndex = nfts.findIndex((n) => n.startX == pickedOwnNFT.startX && n.startY == pickedOwnNFT.startY);
         console.log({updatedNFT: nfts[nftIndex]});
         // TODO: send, and maybe just do a diff?
+    }
+
+    const pickColor = (index) => {
+        setCurrentColor(index);
+        cursorRef.current.style.backgroundColor = colors[index];
     }
 
     return (
@@ -423,6 +424,7 @@ export default function Billboard() {
                 onClickDraw={onClickDraw}
                 onCancelDraw={onCancelDraw}
                 onSubmitDraw={onSubmitDraw}
+                onPickColor={pickColor}
             />
             {/* <Tooltip selectedPixel={selectedPixel}/> */}
         </div>

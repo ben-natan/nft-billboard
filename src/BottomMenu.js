@@ -19,6 +19,7 @@ export default function BottomMenu(props) {
         onClickDraw,
         onCancelDraw,
         onSubmitDraw,
+        onPickColor,
     } = props;
 
     useEffect(() => {
@@ -75,10 +76,11 @@ export default function BottomMenu(props) {
                     <div style={{display: 'grid', gridTemplateColumns: 'auto auto auto auto auto auto auto auto'}}>
                         {colors.map((c, i) => (
                             <div
+                                key={i}
                                 style={{height: '30px', width: '30px', backgroundColor: c}}
+                                onClick={() => onPickColor(i)}
                             >1</div>
                         ))}
-                        <p>sss</p>
                     </div>
                     <button onClick={onCancelDraw}>Cancel</button>
                     <button onClick={onSubmitDraw}>Submit</button>
