@@ -14,7 +14,7 @@ const NUM_COLS = 1300
 const NUM_ROWS = 1000
 export const CELL_WIDTH = 10 // px
 export const CELL_HEIGHT = 10 // px
-const TOOLTIP_WIDTH = 200 // px
+const TOOLTIP_WIDTH = 150 // px
 
 
 const nft1 = {
@@ -62,7 +62,7 @@ function Tooltip(props) {
     const { hoveredNFT } = props;
 
     return (
-        <div style={{
+        <div style={{width: TOOLTIP_WIDTH + "px",
                     display: 'flex',
                     left,
                     top,
