@@ -18,8 +18,8 @@ contract Billboard is ERC721, Ownable {
     }
 
     struct ArtAndCoords {
-        uint8[] art;
         Tuple coords;
+        uint8[] art;
     }
 
     uint256 constant gridWidth = 130;
@@ -73,6 +73,10 @@ contract Billboard is ERC721, Ownable {
         idToCoordinates[tokenId] = coords;
 
         _safeMint(to, tokenId);
+
+        uint256 width = coords.rightX - coords.leftX + 1;
+        uint256 height = coords.bottomY - coords.topY + 1;
+        idToArt[tokenId] = new uint8[](height*width);
     }
 
     function updateArt(uint256 tokenId, uint8[] calldata art) public {
@@ -175,12 +179,10 @@ contract Billboard is ERC721, Ownable {
         ArtAndCoords[] memory allArt = new ArtAndCoords[](_nextTokenId);
 
         for (uint256 tokenId = 0; tokenId < _nextTokenId; tokenId++) {
-            allArt[tokenId] = ArtAndCoords(idToArt[tokenId], idToCoordinates[tokenId]);
+            allArt[tokenId] = ArtAndCoords(idToCoordinates[tokenId], idToArt[tokenId]);
         }
 
         return allArt;   
     }
 
 }
-
-
