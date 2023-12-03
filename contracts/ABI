@@ -330,11 +330,6 @@
 			{
 				"components": [
 					{
-						"internalType": "uint8[]",
-						"name": "art",
-						"type": "uint8[]"
-					},
-					{
 						"components": [
 							{
 								"internalType": "uint256",
@@ -360,6 +355,11 @@
 						"internalType": "struct Billboard.Tuple",
 						"name": "coords",
 						"type": "tuple"
+					},
+					{
+						"internalType": "uint8[]",
+						"name": "art",
+						"type": "uint8[]"
 					}
 				],
 				"internalType": "struct Billboard.ArtAndCoords[]",
