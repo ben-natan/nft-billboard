@@ -36,21 +36,21 @@ contract Billboard is ERC721, Ownable {
         ERC721("Billboard", "BILLBOARD")
         Ownable(initialOwner)
     {
-        palette[0] = "#FFFFFF";
-        palette[1] = "#FFFF00";
-        palette[2] = "#FFA500";
-        palette[3] = "#FF0000";
-        palette[4] = "#FF00FF";
-        palette[5] = "#800080";
-        palette[6] = "#0000FF";
-        palette[7] = "#00FFFF";
-        palette[8] = "#008000";
-        palette[9] = "#023020";
-        palette[10] = "#A52A2A";
-        palette[11] = "#D2B48C";
-        palette[12] = "#D3D3D3";
+        palette[0] = "#ffffff";
+        palette[1] = "#fcf305";
+        palette[2] = "#ff6402";
+        palette[3] = "#dd0806";
+        palette[4] = "#f20884";
+        palette[5] = "#4600a5";
+        palette[6] = "#0000d4";
+        palette[7] = "#02abea";
+        palette[8] = "#1fb714";
+        palette[9] = "#006411";
+        palette[10] = "#562c05";
+        palette[11] = "#90713a";
+        palette[12] = "#c0c0c0";
         palette[13] = "#808080";
-        palette[14] = "#A9A9A9";
+        palette[14] = "#404040";
         palette[15] = "#000000";
     }
 
