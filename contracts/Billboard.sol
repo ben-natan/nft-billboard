@@ -17,6 +17,11 @@ contract Billboard is ERC721, Ownable {
         uint256 bottomY;
     }
 
+    struct ArtAndCoords {
+        uint8[] art;
+        Tuple coords;
+    }
+
     uint256 constant gridWidth = 130;
     uint256 constant gridHeight = 100;
     uint256 private _nextTokenId;
@@ -165,14 +170,15 @@ contract Billboard is ERC721, Ownable {
         }
     }
 
-    function getAllArt() external view returns (uint8[] memory) {
+    function getAllArt() external view returns (ArtAndCoords[] memory) {
 
-        // Must convert grid from storage to memory before returing
-        uint8[] memory fullGrid = new uint8[](gridWidth);
-        for (uint8 i = 0; i < gridWidth; i++) {
-            fullGrid[i] = colorGrid[i];
+        ArtAndCoords[] memory allArt = new ArtAndCoords[](_nextTokenId);
+
+        for (uint256 tokenId = 0; tokenId < _nextTokenId; tokenId++) {
+            allArt[tokenId] = ArtAndCoords(idToArt[tokenId], idToCoordinates[tokenId]);
         }
-        return fullGrid;
+
+        return allArt;   
     }
 
 }
