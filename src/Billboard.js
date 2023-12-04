@@ -22,7 +22,7 @@ const TOOLTIP_WIDTH = 150 // px
 
 // Apple Macintosh default 16-color palette
 export const colors = [
-    // '#ffffff', '#fcf305', '#ff6402', '#dd0806', '#f20884', '#4600a5', '#0000d4', '#02abea',
+    '#ffffff', '#fcf305', '#ff6402', '#dd0806', '#f20884', '#4600a5', '#0000d4', '#02abea',
     '#1fb714', '#006411', '#562c05', '#90713a', '#c0c0c0', '#808080', '#404040', '#000000',
 ];
 
@@ -111,11 +111,15 @@ export default function Billboard(props) {
         setOwnNFTs(owned);
     }
 
-    useEffect(async () => {
-        drawBillboard();
-        drawGrid();
+    useEffect(() => {
+        (
+            async () => {
+                drawBillboard();
+                drawGrid();
 
-        await loadNFTs();
+                await loadNFTs();
+            }
+        )()
     }, []);
 
     const [selectionState, setSelectionState] = useState(SELECTION_STATES.None);

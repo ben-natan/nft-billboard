@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { SELECTION_STATES, CELL_WIDTH, CELL_HEIGHT, colors } from "./Billboard";
 
 const BOTTOM_MENU_WIDTH = 270 // px
@@ -21,11 +20,6 @@ export default function BottomMenu(props) {
         onSubmitDraw,
         onPickColor,
     } = props;
-
-    useEffect(() => {
-        // console.log({ownNFTs})
-        console.log({ ownNFTs })
-    }, [ownNFTs])
 
     return (
         <div style={{
@@ -51,7 +45,7 @@ export default function BottomMenu(props) {
 
                 <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.5, cursor: 'default'}}>
                     <p style={{margin: 0, fontWeight: 'bold'}}>Select an area to mint</p>
-                    {ownNFTs.length > -1 &&
+                    {ownNFTs?.length > -1 &&
                         <p style={{margin: 0}}>or select&nbsp;
                             <a onMouseEnter={() => outlineMultipleNFTs(ownNFTs)} onMouseLeave={clearOutlineNFTs}
                                 style={{color: 'lightblue'}}
