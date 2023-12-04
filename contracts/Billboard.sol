@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -22,11 +22,12 @@ contract Billboard is ERC721, Ownable {
         uint8[] art;
     }
 
+
+    uint256 public pixelPrice = 100000000000000; //0.0001 eth
     uint256 constant gridWidth = 130;
     uint256 constant gridHeight = 100;
     uint256 private _nextTokenId;
     bool[gridWidth*gridHeight] public coordTaken;
-    uint8[gridWidth*gridHeight] public colorGrid;
     mapping(uint256 => Tuple) public idToCoordinates;
     mapping(uint256 => uint8[]) public idToArt;
 
@@ -54,12 +55,12 @@ contract Billboard is ERC721, Ownable {
         palette[15] = "#000000";
     }
 
-    function mint(uint256 leftX, uint256 rightX, uint256 topY, uint256 bottomY) public {
+    function mint(uint256 leftX, uint256 rightX, uint256 topY, uint256 bottomY) public payable {
         safeMint(msg.sender, leftX, rightX, topY, bottomY);
     }
 
-    function safeMint(address to, uint256 leftX, uint256 rightX, uint256 topY, uint256 bottomY) public {
-        
+    function safeMint(address to, uint256 leftX, uint256 rightX, uint256 topY, uint256 bottomY) public payable {
+
         // ensuring valid coordinates
         require(leftX <= rightX && topY <= bottomY, "Invalid Coordinates: Backwards x ordering");
         require(leftX >= 0 && topY >= 0, "Invalid Coordinates: Must be >= 0");
@@ -76,7 +77,16 @@ contract Billboard is ERC721, Ownable {
 
         uint256 width = coords.rightX - coords.leftX + 1;
         uint256 height = coords.bottomY - coords.topY + 1;
-        idToArt[tokenId] = new uint8[](height*width);
+
+        require(msg.value >= width*height*pixelPrice, "Insufficient funds sent");
+
+        uint8[] memory art = new uint8[](height*width);
+        for (uint256 index = 0; index < art.length; index++) {
+            art[index] = 0;
+        }
+        idToArt[tokenId] = art;
+
+
     }
 
     function updateArt(uint256 tokenId, uint8[] calldata art) public {
@@ -87,16 +97,10 @@ contract Billboard is ERC721, Ownable {
 
         idToArt[tokenId] = art;
 
-        uint256 index = 0;
-        for (uint256 y = coords.topY; y < coords.bottomY; y++) {
-            for (uint256 x = coords.leftX; x < coords.rightX; x++) {
-            
-                require(art[index] < 16, "Invalid color entered: must be < 16");
-                colorGrid[x + y*gridWidth] = art[index];
-                index++;
+         for (uint256 index = 0; index < art.length; index++) {
+            require(art[index] < 16, "Invalid color entered: must be < 16");
+         }
 
-            }
-        }
     }
 
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
@@ -157,10 +161,6 @@ contract Billboard is ERC721, Ownable {
         return svg;
     }
 
-    function concat(string memory a, string memory b) internal pure returns(string memory){
-        return string(abi.encodePacked(a, b));
-    }
-
     function checkCollisions(Tuple memory coords) internal {
         
         for (uint256 x = coords.leftX; x <= coords.rightX; x++) {
@@ -183,6 +183,18 @@ contract Billboard is ERC721, Ownable {
         }
 
         return allArt;   
+    }
+
+    function withdraw(uint256 amount) public onlyOwner {
+
+        require(address(this).balance >= amount, "Insufficient balance in the contract");
+        require(msg.sender == owner(), "This function can only be called by the contract owner");
+        payable(msg.sender).transfer(amount);
+
+    }
+
+    function getPrice() public view returns(uint256) {
+        return pixelPrice;
     }
 
 }
