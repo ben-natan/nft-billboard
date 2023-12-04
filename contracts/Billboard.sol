@@ -11,10 +11,10 @@ contract Billboard is ERC721, Ownable {
     using Strings for uint256;
 
     struct Tuple {
-        uint256 leftX;
-        uint256 rightX;
-        uint256 topY;
-        uint256 bottomY;
+        uint16 startX;
+        uint16 endX;
+        uint16 startY;
+        uint16 endY;
     }
 
     struct ArtAndCoords {
@@ -24,8 +24,8 @@ contract Billboard is ERC721, Ownable {
 
 
     uint256 public pixelPrice = 100000000000000; //0.0001 eth
-    uint256 constant gridWidth = 130;
-    uint256 constant gridHeight = 100;
+    uint16 constant gridWidth = 130;
+    uint16 constant gridHeight = 100;
     uint256 private _nextTokenId;
     bool[gridWidth*gridHeight] public coordTaken;
     mapping(uint256 => Tuple) public idToCoordinates;
@@ -55,19 +55,19 @@ contract Billboard is ERC721, Ownable {
         palette[15] = "#000000";
     }
 
-    function mint(uint256 leftX, uint256 rightX, uint256 topY, uint256 bottomY) public payable {
-        safeMint(msg.sender, leftX, rightX, topY, bottomY);
+    function mint(uint16 startX, uint16 endX, uint16 startY, uint16 endY) public payable {
+        safeMint(msg.sender, startX, endX, startY, endY);
     }
 
-    function safeMint(address to, uint256 leftX, uint256 rightX, uint256 topY, uint256 bottomY) public payable {
+    function safeMint(address to, uint16 startX, uint16 endX, uint16 startY, uint16 endY) public payable {
 
         // ensuring valid coordinates
-        require(leftX <= rightX && topY <= bottomY, "Invalid Coordinates: Backwards x ordering");
-        require(leftX >= 0 && topY >= 0, "Invalid Coordinates: Must be >= 0");
-        require(bottomY < gridHeight && rightX < gridWidth, "Invalid Coordinates: Must be < GridSize");
-        
+        require(startX <= endX && startY <= endY, "Invalid Coordinates: Backwards x ordering");
+        require(startX >= 0 && startY >= 0, "Invalid Coordinates: Must be >= 0");
+        require(endY < gridHeight && endX < gridWidth, "Invalid Coordinates: Must be < GridSize");
+
         // ensures no collisions with previously minted tokens and also stores new coords on collision map
-        Tuple memory coords = Tuple(leftX, rightX, topY, bottomY);
+        Tuple memory coords = Tuple(startX, endX, startY, endY);
         checkCollisions(coords);
 
         uint256 tokenId = _nextTokenId++;
@@ -75,8 +75,8 @@ contract Billboard is ERC721, Ownable {
 
         _safeMint(to, tokenId);
 
-        uint256 width = coords.rightX - coords.leftX + 1;
-        uint256 height = coords.bottomY - coords.topY + 1;
+        uint16 width = coords.endX - coords.startX + 1;
+        uint16 height = coords.endY - coords.startY + 1;
 
         require(msg.value >= width*height*pixelPrice, "Insufficient funds sent");
 
@@ -90,10 +90,10 @@ contract Billboard is ERC721, Ownable {
     }
 
     function updateArt(uint256 tokenId, uint8[] calldata art) public {
-        
+
         require(msg.sender == ownerOf(tokenId));
         Tuple memory coords = idToCoordinates[tokenId];
-        require(art.length == (coords.rightX - coords.leftX + 1)*(coords.bottomY - coords.topY + 1));
+        require(art.length == (coords.endX - coords.startX + 1)*(coords.endY - coords.startY + 1));
 
         idToArt[tokenId] = art;
 
@@ -121,8 +121,8 @@ contract Billboard is ERC721, Ownable {
     function buildSVG(uint256 tokenId) public view returns (string memory){
 
         Tuple memory coords = idToCoordinates[tokenId];
-        uint256 width = coords.rightX - coords.leftX + 1;
-        uint256 height = coords.bottomY - coords.topY + 1;
+        uint16 width = coords.endX - coords.startX + 1;
+        uint16 height = coords.endY - coords.startY + 1;
         uint256 pixelSize;
 
         if (width >= height) {
@@ -162,9 +162,9 @@ contract Billboard is ERC721, Ownable {
     }
 
     function checkCollisions(Tuple memory coords) internal {
-        
-        for (uint256 x = coords.leftX; x <= coords.rightX; x++) {
-            for (uint256 y = coords.topY; y <= coords.bottomY; y++) {
+
+        for (uint16 x = coords.startX; x <= coords.endX; x++) {
+            for (uint16 y = coords.startY; y <= coords.endY; y++) {
 
                 require(!coordTaken[x + y*gridWidth], "Invalid Coordinates: Coordinates unavailable");
 
@@ -182,7 +182,7 @@ contract Billboard is ERC721, Ownable {
             allArt[tokenId] = ArtAndCoords(idToCoordinates[tokenId], idToArt[tokenId]);
         }
 
-        return allArt;   
+        return allArt;
     }
 
     function withdraw(uint256 amount) public onlyOwner {
@@ -195,6 +195,24 @@ contract Billboard is ERC721, Ownable {
 
     function getPrice() public view returns(uint256) {
         return pixelPrice;
+    }
+
+    function getIdsOwned() public view returns(uint256[] memory) {
+        uint n = balanceOf(msg.sender);
+        uint256[] memory tokenIdsOwned = new uint256[](n);
+        uint current = 0;
+
+        for (uint256 i = 0; i < _nextTokenId; i++) {
+            if (ownerOf(i) == msg.sender) {
+                tokenIdsOwned[current] = i;
+                current++;
+                if (current == n) {
+                    break;
+                }
+            }
+        }
+
+        return tokenIdsOwned;
     }
 
 }
