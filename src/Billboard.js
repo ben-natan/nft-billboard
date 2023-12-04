@@ -75,6 +75,7 @@ function Tooltip(props) {
 
 const parseAllArt = (arts) => {
     let allArts = [];
+
     for (let i = 0; i < arts.length; i++) {
         allArts.push({
             tokenId: i,
@@ -86,7 +87,6 @@ const parseAllArt = (arts) => {
         });
     }
 
-    console.log({allArts});
     return allArts;
 }
 
@@ -192,7 +192,6 @@ export default function Billboard(props) {
             const nft = nfts[i];
             if (currentX >= nft.startX && currentX <= nft.endX
                 && currentY >= nft.startY && currentY <= nft.endY) {
-                    console.log({ nft })
                     return nft;
                 }
         }
@@ -460,10 +459,22 @@ export default function Billboard(props) {
         cursorRef.current.style.backgroundColor = 'transparent';
     }
 
-    const onSubmitDraw = () => {
-        const nftIndex = nfts.findIndex((n) => n.startX == pickedOwnNFT.startX && n.startY == pickedOwnNFT.startY);
-        console.log({updatedNFT: nfts[nftIndex]});
+    const onSubmitDraw = async () => {
+        const tokenId = nfts.findIndex((n) => n.startX == pickedOwnNFT.startX && n.startY == pickedOwnNFT.startY);
         // TODO: send, and maybe just do a diff?
+
+        const data = nfts[tokenId].data;
+
+        await billboardContract.updateArt(
+            tokenId,
+            data,
+            {
+                gasLimit: 999999,
+                from: currentAccount,
+            }
+        );
+
+        window.location.reload();
     }
 
     const pickColor = (index) => {
