@@ -95,18 +95,10 @@ export default function Billboard(props) {
     const cursorRef = useRef(null);
     const { currentAccount } = props;
     const provider = ((window.ethereum != null) ? new ethers.providers.Web3Provider(window.ethereum) : ethers.providers.getDefaultProvider());
-    const billboardContract = new ethers.Contract(contractAddress, BILLBOARD_ABI, provider)
+    const signer = provider.getSigner();
+    const billboardContract = new ethers.Contract(contractAddress, BILLBOARD_ABI, signer);
 
-    useEffect(async () => {
-        drawBillboard();
-        drawGrid();
-
-        // const rawArts = (await billboardContract.getAllArt());
-        // console.log({ rawArts });
-
-        // const n = parseAllArt(await billboardContract.getAllArt());
-
-
+    const loadNFTs = async () => {
         const n = parseAllArt(await billboardContract.getAllArt());
         setInitialNFTs(structuredClone(n));
         setNFTs(structuredClone(n));
@@ -117,12 +109,13 @@ export default function Billboard(props) {
             owned.push(structuredClone(n[ownedIds[i]]));
         }
         setOwnNFTs(owned);
+    }
 
-        // TODO: getAllArts
+    useEffect(async () => {
+        drawBillboard();
+        drawGrid();
 
-        // // TODO: get nfts
-        // setInitialNFTs(structuredClone(allNFTs));
-        // setNFTs(structuredClone(allNFTs));
+        await loadNFTs();
     }, []);
 
     const [selectionState, setSelectionState] = useState(SELECTION_STATES.None);
@@ -359,7 +352,7 @@ export default function Billboard(props) {
         cursorRef.current.style.display = 'block';
     }
 
-    const onMint = () => {
+    const onMint = async () => {
         const x = selectionCoords.startX / CELL_WIDTH;
         const y = selectionCoords.startY / CELL_HEIGHT;
         const width = selectionCoords.width / CELL_WIDTH;
@@ -381,8 +374,23 @@ export default function Billboard(props) {
             endY = tmp;
         }
 
-        // TODO: send this to the chain to mint
-        console.log({ startX, startY, endX, endY });
+        const size = (endX - startX)*(endY - startY);
+        const pricePerPixel = await billboardContract.pixelPrice();
+
+        await billboardContract.mint(
+            startX,
+            endX,
+            startY,
+            endY,
+            {
+                // TODO: not sure why pricePerPixel.mul(size) throws "unsufficient intrinsec funds",
+                // and +10 does not work for big (> 20 pixels) selections
+                value: pricePerPixel.mul(size + 10),
+                gasLimit: 999999,
+                from: currentAccount
+            });
+
+        window.location.reload();
     }
 
     const onClickDraw = () => {
