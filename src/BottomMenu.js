@@ -22,6 +22,11 @@ export default function BottomMenu(props) {
         onPickColor,
     } = props;
 
+    useEffect(() => {
+        // console.log({ownNFTs})
+        console.log({ ownNFTs })
+    }, [ownNFTs])
+
     return (
         <div style={{
             width: BOTTOM_MENU_WIDTH + "px",
@@ -41,7 +46,7 @@ export default function BottomMenu(props) {
                 selectionState == SELECTION_STATES.None &&
                 <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
                     <p style={{marginBottom: 0}}>Select an area to mint</p>
-                    {ownNFTs.length > -1 &&
+                    {ownNFTs?.length > -1 &&
                         <p>or select&nbsp;
                             <a onMouseEnter={() => outlineMultipleNFTs(ownNFTs)} onMouseLeave={clearOutlineNFTs}
                                 style={{textDecoration: 'underline'}}

@@ -1,10 +1,9 @@
-import logo from './logo.svg';
 import './App.css';
 
 import { useEffect, useState } from 'react';
 import Billboard from './Billboard';
 
-export const contractAddress = '';
+export const contractAddress = '0x177B981fFB17C95da2DFF30709FA9A75A2E793ef';
 
 function App() {
   const [currentAccount, setCurrentAccount] = useState(null);
@@ -62,7 +61,7 @@ function App() {
 
   return (
     <>
-      {currentAccount ? <Billboard /> : <ConnectWalletButton />}
+      {currentAccount ? <Billboard currentAccount={currentAccount} /> : <ConnectWalletButton />}
     </>
   );
 }

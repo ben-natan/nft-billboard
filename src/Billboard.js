@@ -1,6 +1,9 @@
+import { ethers } from 'ethers';
 import { useEffect, useState, useRef } from 'react';
+import { contractAddress } from './App';
 import "./Billboard.css"
 import BottomMenu from './BottomMenu';
+import BILLBOARD_ABI from './contracts/nft-billboard.json';
 
 export const SELECTION_STATES = {
     None: "None",
@@ -17,36 +20,9 @@ export const CELL_HEIGHT = 10 // px
 const TOOLTIP_WIDTH = 150 // px
 
 
-const nft1 = {
-    startX: 1100,
-    startY: 10,
-    endX: 1210,
-    endY: 120,
-    data: Array(11 * 11).fill(1),
-}
-
-for (let i = 0; i < 11; i++) {
-    nft1.data[i] = 4;
-    nft1.data[i + 22] = 4;
-    nft1.data[i + 44] = 4;
-    nft1.data[i + 66] = 4;
-    nft1.data[i + 88] = 4;
-    nft1.data[i + 110] = 4;
-}
-
-const nft2 = {
-    startX: 300,
-    startY: 0,
-    endX: 700,
-    endY: 300,
-    data: Array(40 * 30).fill(2),
-}
-
-let allNFTs = [nft1, nft2]
-
 // Apple Macintosh default 16-color palette
 export const colors = [
-    '#ffffff', '#fcf305', '#ff6402', '#dd0806', '#f20884', '#4600a5', '#0000d4', '#02abea',
+    // '#ffffff', '#fcf305', '#ff6402', '#dd0806', '#f20884', '#4600a5', '#0000d4', '#02abea',
     '#1fb714', '#006411', '#562c05', '#90713a', '#c0c0c0', '#808080', '#404040', '#000000',
 ];
 
@@ -61,6 +37,13 @@ function Tooltip(props) {
     }
     const { hoveredNFT } = props;
 
+    const [owner, setOwner] =  useState(0);
+    useEffect(() => {
+        props.billboardContract.ownerOf(hoveredNFT.tokenId)
+            .then((o) => setOwner(o));
+    }, []);
+
+
     return (
         <div style={{width: TOOLTIP_WIDTH + "px",
                     display: 'flex',
@@ -74,7 +57,9 @@ function Tooltip(props) {
             {/* TODO: fetch informations */}
             <div style={{lineHeight: 1.5, marginBottom: "5px"}}>
                 <p style={{margin: 0, color: 'white', fontWeight: 'bold'}}>Owner:</p>
-                <p style={{margin: 0, color: 'white'}}>0x00000000000000</p>
+                <p style={{margin: 0, color: 'white'}}>
+                    {owner}
+                </p>
             </div>
             <div style={{lineHeight: 1.5, marginTop: "5px", marginBottom: "5px"}}>
                 <p style={{margin: 0, color: 'white', fontWeight: 'bold'}}>Last minted for:</p>
@@ -88,18 +73,56 @@ function Tooltip(props) {
     )
 }
 
-export default function Billboard() {
+const parseAllArt = (arts) => {
+    let allArts = [];
+    for (let i = 0; i < arts.length; i++) {
+        allArts.push({
+            tokenId: i,
+            startX: arts[i][0][0] * CELL_WIDTH,
+            endX: arts[i][0][1] * CELL_WIDTH,
+            startY: arts[i][0][2] * CELL_HEIGHT,
+            endY: arts[i][0][3] * CELL_HEIGHT,
+            data: arts[i][1]
+        });
+    }
+
+    console.log({allArts});
+    return allArts;
+}
+
+export default function Billboard(props) {
     const cvRef = useRef(null);
     const cursorRef = useRef(null);
+    const { currentAccount } = props;
+    const provider = ((window.ethereum != null) ? new ethers.providers.Web3Provider(window.ethereum) : ethers.providers.getDefaultProvider());
+    const billboardContract = new ethers.Contract(contractAddress, BILLBOARD_ABI, provider)
 
-    useEffect(() => {
+    useEffect(async () => {
         drawBillboard();
         drawGrid();
-        setOwnNFTs(allNFTs);
 
-        // TODO: get nfts
-        setInitialNFTs(structuredClone(allNFTs));
-        setNFTs(structuredClone(allNFTs));
+        // const rawArts = (await billboardContract.getAllArt());
+        // console.log({ rawArts });
+
+        // const n = parseAllArt(await billboardContract.getAllArt());
+
+
+        const n = parseAllArt(await billboardContract.getAllArt());
+        setInitialNFTs(structuredClone(n));
+        setNFTs(structuredClone(n));
+
+        const ownedIds = await billboardContract.getIdsOwned();
+        let owned = [];
+        for (let i = 0; i < ownedIds.length; i++) {
+            owned.push(structuredClone(n[ownedIds[i]]));
+        }
+        setOwnNFTs(owned);
+
+        // TODO: getAllArts
+
+        // // TODO: get nfts
+        // setInitialNFTs(structuredClone(allNFTs));
+        // setNFTs(structuredClone(allNFTs));
     }, []);
 
     const [selectionState, setSelectionState] = useState(SELECTION_STATES.None);
@@ -124,7 +147,7 @@ export default function Billboard() {
 
         const oldFillStyle = ctx.fillStyle;
 
-        for (let i = 0; i < nfts.length; i++) {
+        for (let i = 0; i < nfts?.length; i++) {
             const startX = nfts[i].startX;
             const startY = nfts[i].startY;
             const width = (nfts[i].endX - nfts[i].startX) / CELL_WIDTH;
@@ -172,10 +195,11 @@ export default function Billboard() {
     }
 
     const getCollidingNFT = (nfts, currentX, currentY) => {
-        for (let i = 0; i < nfts.length; i++) {
+        for (let i = 0; i < nfts?.length; i++) {
             const nft = nfts[i];
             if (currentX >= nft.startX && currentX <= nft.endX
                 && currentY >= nft.startY && currentY <= nft.endY) {
+                    console.log({ nft })
                     return nft;
                 }
         }
@@ -296,7 +320,6 @@ export default function Billboard() {
             return;
         }
 
-        clearOutlineNFTs();
 
         const existingOwnNFT = getCollidingNFT(ownNFTs, currentX, currentY);
         if (existingOwnNFT) {
@@ -305,6 +328,12 @@ export default function Billboard() {
 
             outlineOneNFT(existingOwnNFT);
 
+            return;
+        } else if (getCollidingNFT(nfts, currentX, currentY)) {
+            setSelectionState(SELECTION_STATES.None);
+
+            setPickedOwnNFT(null);
+            clearOutlineNFTs();
             return;
         }
 
@@ -399,7 +428,7 @@ export default function Billboard() {
         ctx.lineWidth = 3;
 
 
-        for (let i = 0; i < nfts.length; i++) {
+        for (let i = 0; i < nfts?.length; i++) {
             ctx.strokeRect(nfts[i].startX, nfts[i].startY, nfts[i].endX - nfts[i].startX, nfts[i].endY - nfts[i].startY);
         }
 
@@ -455,10 +484,7 @@ export default function Billboard() {
                 selectionState={selectionState}
                 onMint={onMint}
                 onClearSelection={onClearSelection}
-                ownNFTs={[
-                    {startX: nft1.startX, startY: nft1.startY, endX: nft1.endX, endY: nft1.endY},
-                    {startX: nft2.startX, startY: nft2.startY, endX: nft2.endX, endY: nft2.endY}
-                ]}
+                ownNFTs={ownNFTs}
                 outlineMultipleNFTs={outlineMultipleNFTs}
                 clearOutlineNFTs={clearOutlineNFTs}
                 pickedOwnNFT={pickedOwnNFT}
@@ -467,7 +493,7 @@ export default function Billboard() {
                 onSubmitDraw={onSubmitDraw}
                 onPickColor={pickColor}
             />
-            {tooltipVisible && <Tooltip mousePosition={mousePosition} hoveredNFT={hoveredNFT}/>}
+            {tooltipVisible && <Tooltip mousePosition={mousePosition} hoveredNFT={hoveredNFT} billboardContract={billboardContract} />}
         </div>
     );
 }
