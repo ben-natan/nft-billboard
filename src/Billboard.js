@@ -115,19 +115,7 @@ export default function Billboard(props) {
         drawBillboard();
         drawGrid();
 
-        // const rawArts = (await billboardContract.getAllArt());
-        // console.log({ rawArts });
-
-        // const n = parseAllArt(await billboardContract.getAllArt());
-
-
         await loadNFTs();
-
-        // TODO: getAllArts
-
-        // // TODO: get nfts
-        // setInitialNFTs(structuredClone(allNFTs));
-        // setNFTs(structuredClone(allNFTs));
     }, []);
 
     const [selectionState, setSelectionState] = useState(SELECTION_STATES.None);
