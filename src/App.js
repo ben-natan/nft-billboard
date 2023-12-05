@@ -3,7 +3,7 @@ import './App.css';
 import { useEffect, useState } from 'react';
 import Billboard from './Billboard';
 
-export const contractAddress = '0xA656627E23041d96251F161F62fB9C9d61f0b449';
+export const contractAddress = '0x1e3DB9D9383B6C099d114283e86BfA7a44Cc0074';
 
 function App() {
   const [currentAccount, setCurrentAccount] = useState(null);
