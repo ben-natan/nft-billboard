@@ -75,13 +75,6 @@ function Tooltip(props) {
     )
 }
 
-const CloseToastButton = () => {
-    // <i onClick={() => { window.location.reload(); }}>
-    //     Reload
-    // </i>
-    <p> ASLUT UT UTUT U</p>
-}
-
 const parseAllArt = (arts) => {
     let allArts = [];
 
@@ -634,7 +627,7 @@ export default function Billboard(props) {
                 onPickColor={pickColor}
             />
             {tooltipVisible && <Tooltip mousePosition={mousePosition} hoveredNFT={hoveredNFT} billboardContract={billboardContract} />}
-            <ToastContainer position='top-right' closeButton={CloseToastButton}/>
+            <ToastContainer position='top-right'/>
         </div>
     );
 }
