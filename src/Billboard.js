@@ -110,6 +110,15 @@ const removeHashFromOngoingMints = (hash) => {
     localStorage.setItem("ongoingMints", JSON.stringify(ongoingMints));
 }
 
+const removeHashFromOngoingDraws = (hash) => {
+    let ongoingDraws = JSON.parse(localStorage.getItem("ongoingDraws"));
+    const index = ongoingDraws.indexOf(hash);
+    if (index > -1) {
+        ongoingDraws.splice(index, 1);
+    }
+    localStorage.setItem("ongoingDraws", JSON.stringify(ongoingDraws));
+}
+
 export default function Billboard(props) {
     const cvRef = useRef(null);
     const cursorRef = useRef(null);
@@ -130,7 +139,6 @@ export default function Billboard(props) {
         }
         setOwnNFTs(owned);
     }
-
 
     const fireToastForMint = (hash) => {
         const statusPromise = provider.waitForTransaction(hash).then(() => removeHashFromOngoingMints(hash));
@@ -163,7 +171,7 @@ export default function Billboard(props) {
     }
 
     const loadOngoingMints = async () => {
-        const ongoingMints = JSON.parse(localStorage.getItem("ongoingMints"));
+        const ongoingMints = JSON.parse(localStorage.getItem("ongoingMints")) || [];
         for (let i = 0; i < ongoingMints.length; i++) {
             const txReceipt = await provider.getTransactionReceipt(ongoingMints[i]);
 
@@ -171,6 +179,49 @@ export default function Billboard(props) {
                 fireToastForMint(ongoingMints[i]);
             } else {
                 removeHashFromOngoingMints(ongoingMints[i]);
+            }
+        }
+    }
+
+    const fireToastForDraw = (hash) => {
+        const statusPromise = provider.waitForTransaction(hash).then(() => removeHashFromOngoingDraws(hash));
+        toast.promise(
+            statusPromise,
+            {
+                pending: "Drawing in progress",
+                success: {
+                    render() {
+                        return (
+                            <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', padding: 0}}>
+                                <p style={{margin: 0}}>Art updated!</p>
+                                <button onClick={() => { window.location.reload(); }}
+                                    style={{
+                                    margin: 0,
+                                    height: "25px", fontSize: '14px', fontWeight: 500,
+                                    border: 0, outline: 0, color: 'white', backgroundColor: 'rgb(84, 105, 212)',
+                                    boxShadow: "rgb(0 0 0 / 0%) 0px 0px 0px 0px, rgb(0 0 0 / 0%) 0px 0px 0px 0px, rgb(0 0 0 / 12%) 0px 1px 1px 0px, rgb(84 105 212) 0px 0px 0px 1px, rgb(0 0 0 / 0%) 0px 0px 0px 0px, rgb(0 0 0 / 0%) 0px 0px 0px 0px, rgb(60 66 87 / 8%) 0px 2px 5px 0px;",
+                                    borderRadius: '4px', cursor: 'pointer'}}>Reload</button>
+                            </div>
+                        )
+                    }
+                },
+                error: "Error while drawing..",
+            }
+        );
+
+        const ongoingDraws = JSON.parse(localStorage.getItem("ongoingDraws")) || [];
+        localStorage.setItem("ongoingDraws", JSON.stringify([...ongoingDraws, hash]));
+    }
+
+    const loadOngoingDraws = async () => {
+        const ongoingDraws = JSON.parse(localStorage.getItem("ongoingDraws")) || [];
+        for (let i = 0; i < ongoingDraws.length; i++) {
+            const txReceipt = await provider.getTransactionReceipt(ongoingDraws[i]);
+
+            if (!txReceipt) {
+                fireToastForDraw(ongoingDraws[i]);
+            } else {
+                removeHashFromOngoingDraws(ongoingDraws[i]);
             }
         }
     }
@@ -183,6 +234,7 @@ export default function Billboard(props) {
 
                 await loadNFTs();
                 await loadOngoingMints();
+                await loadOngoingDraws();
             }
         )()
     }, []);
@@ -534,7 +586,7 @@ export default function Billboard(props) {
 
         const data = nfts[tokenId].data;
 
-        await billboardContract.updateArt(
+        const draw = await billboardContract.updateArt(
             tokenId,
             data,
             {
@@ -543,7 +595,7 @@ export default function Billboard(props) {
             }
         );
 
-        window.location.reload();
+        fireToastForDraw(draw.hash);
     }
 
     const pickColor = (index) => {
