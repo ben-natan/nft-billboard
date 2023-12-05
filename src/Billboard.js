@@ -1,5 +1,7 @@
 import { ethers } from 'ethers';
 import { useEffect, useState, useRef } from 'react';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { contractAddress } from './App';
 import "./Billboard.css"
 import BottomMenu from './BottomMenu';
@@ -58,13 +60,13 @@ function Tooltip(props) {
             <div style={{lineHeight: 1.5, marginBottom: "5px"}}>
                 <p style={{margin: 0, color: 'white', fontWeight: 'bold'}}>Owner:</p>
                 <p style={{margin: 0, color: 'white'}}>
-                    {owner}
+                    {owner.toString().substring(0, 20)}
                 </p>
             </div>
-            <div style={{lineHeight: 1.5, marginTop: "5px", marginBottom: "5px"}}>
+            {/* <div style={{lineHeight: 1.5, marginTop: "5px", marginBottom: "5px"}}>
                 <p style={{margin: 0, color: 'white', fontWeight: 'bold'}}>Last minted for:</p>
                 <p style={{margin: 0, color: 'white'}}>0.34 ETH</p>
-            </div>
+            </div> */}
             <div style={{lineHeight: 1.5, marginTop: "5px"}}>
                 <p style={{margin: 0, color: 'white', fontWeight: 'bold'}}>Size:</p>
                 <p style={{margin: 0, color: 'white'}}>{(hoveredNFT.endX - hoveredNFT.startX) / CELL_WIDTH * (hoveredNFT.endY - hoveredNFT.startY) / CELL_WIDTH} pixels</p>
@@ -90,6 +92,26 @@ const parseAllArt = (arts) => {
     return allArts;
 }
 
+
+
+const removeHashFromOngoingMints = (hash) => {
+    let ongoingMints = JSON.parse(localStorage.getItem("ongoingMints"));
+    const index = ongoingMints.indexOf(hash);
+    if (index > -1) {
+        ongoingMints.splice(index, 1);
+    }
+    localStorage.setItem("ongoingMints", JSON.stringify(ongoingMints));
+}
+
+const removeHashFromOngoingDraws = (hash) => {
+    let ongoingDraws = JSON.parse(localStorage.getItem("ongoingDraws"));
+    const index = ongoingDraws.indexOf(hash);
+    if (index > -1) {
+        ongoingDraws.splice(index, 1);
+    }
+    localStorage.setItem("ongoingDraws", JSON.stringify(ongoingDraws));
+}
+
 export default function Billboard(props) {
     const cvRef = useRef(null);
     const cursorRef = useRef(null);
@@ -111,6 +133,92 @@ export default function Billboard(props) {
         setOwnNFTs(owned);
     }
 
+    const fireToastForMint = (hash) => {
+        const statusPromise = provider.waitForTransaction(hash).then(() => removeHashFromOngoingMints(hash));
+        toast.promise(
+            statusPromise,
+            {
+                pending: "Minting in progress",
+                success: {
+                    render() {
+                        return (
+                            <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', padding: 0}}>
+                                <p style={{margin: 0}}>Minted!</p>
+                                <button onClick={() => { window.location.reload(); }}
+                                    style={{
+                                    margin: 0,
+                                    height: "25px", fontSize: '14px', fontWeight: 500,
+                                    border: 0, outline: 0, color: 'white', backgroundColor: 'rgb(84, 105, 212)',
+                                    boxShadow: "rgb(0 0 0 / 0%) 0px 0px 0px 0px, rgb(0 0 0 / 0%) 0px 0px 0px 0px, rgb(0 0 0 / 12%) 0px 1px 1px 0px, rgb(84 105 212) 0px 0px 0px 1px, rgb(0 0 0 / 0%) 0px 0px 0px 0px, rgb(0 0 0 / 0%) 0px 0px 0px 0px, rgb(60 66 87 / 8%) 0px 2px 5px 0px;",
+                                    borderRadius: '4px', cursor: 'pointer'}}>Reload</button>
+                            </div>
+                        )
+                    }
+                },
+                error: "Error while minting..",
+            }
+        );
+
+        const ongoingMints = JSON.parse(localStorage.getItem("ongoingMints")) || [];
+        localStorage.setItem("ongoingMints", JSON.stringify([...ongoingMints, hash]));
+    }
+
+    const loadOngoingMints = async () => {
+        const ongoingMints = JSON.parse(localStorage.getItem("ongoingMints")) || [];
+        for (let i = 0; i < ongoingMints.length; i++) {
+            const txReceipt = await provider.getTransactionReceipt(ongoingMints[i]);
+
+            if (!txReceipt) {
+                fireToastForMint(ongoingMints[i]);
+            } else {
+                removeHashFromOngoingMints(ongoingMints[i]);
+            }
+        }
+    }
+
+    const fireToastForDraw = (hash) => {
+        const statusPromise = provider.waitForTransaction(hash).then(() => removeHashFromOngoingDraws(hash));
+        toast.promise(
+            statusPromise,
+            {
+                pending: "Drawing in progress",
+                success: {
+                    render() {
+                        return (
+                            <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', padding: 0}}>
+                                <p style={{margin: 0}}>Art updated!</p>
+                                <button onClick={() => { window.location.reload(); }}
+                                    style={{
+                                    margin: 0,
+                                    height: "25px", fontSize: '14px', fontWeight: 500,
+                                    border: 0, outline: 0, color: 'white', backgroundColor: 'rgb(84, 105, 212)',
+                                    boxShadow: "rgb(0 0 0 / 0%) 0px 0px 0px 0px, rgb(0 0 0 / 0%) 0px 0px 0px 0px, rgb(0 0 0 / 12%) 0px 1px 1px 0px, rgb(84 105 212) 0px 0px 0px 1px, rgb(0 0 0 / 0%) 0px 0px 0px 0px, rgb(0 0 0 / 0%) 0px 0px 0px 0px, rgb(60 66 87 / 8%) 0px 2px 5px 0px;",
+                                    borderRadius: '4px', cursor: 'pointer'}}>Reload</button>
+                            </div>
+                        )
+                    }
+                },
+                error: "Error while drawing..",
+            }
+        );
+
+        const ongoingDraws = JSON.parse(localStorage.getItem("ongoingDraws")) || [];
+        localStorage.setItem("ongoingDraws", JSON.stringify([...ongoingDraws, hash]));
+    }
+
+    const loadOngoingDraws = async () => {
+        const ongoingDraws = JSON.parse(localStorage.getItem("ongoingDraws")) || [];
+        for (let i = 0; i < ongoingDraws.length; i++) {
+            const txReceipt = await provider.getTransactionReceipt(ongoingDraws[i]);
+
+            if (!txReceipt) {
+                fireToastForDraw(ongoingDraws[i]);
+            } else {
+                removeHashFromOngoingDraws(ongoingDraws[i]);
+            }
+        }
+    }
+
     useEffect(() => {
         (
             async () => {
@@ -118,6 +226,8 @@ export default function Billboard(props) {
                 drawGrid();
 
                 await loadNFTs();
+                await loadOngoingMints();
+                await loadOngoingDraws();
             }
         )()
     }, []);
@@ -380,7 +490,7 @@ export default function Billboard(props) {
         const size = (endX - startX)*(endY - startY);
         const pricePerPixel = await billboardContract.pixelPrice();
 
-        await billboardContract.mint(
+        const mint = await billboardContract.mint(
             startX,
             endX,
             startY,
@@ -389,11 +499,11 @@ export default function Billboard(props) {
                 // TODO: not sure why pricePerPixel.mul(size) throws "unsufficient intrinsec funds",
                 // and +10 does not work for big (> 20 pixels) selections
                 value: pricePerPixel.mul(size + 10),
-                gasLimit: 999999,
+                gasLimit: 5999999,
                 from: currentAccount
             });
 
-        window.location.reload();
+        fireToastForMint(mint.hash);
     }
 
     const onClickDraw = () => {
@@ -469,16 +579,16 @@ export default function Billboard(props) {
 
         const data = nfts[tokenId].data;
 
-        await billboardContract.updateArt(
+        const draw = await billboardContract.updateArt(
             tokenId,
             data,
             {
-                gasLimit: 999999,
+                gasLimit: 5999999,
                 from: currentAccount,
             }
         );
 
-        window.location.reload();
+        fireToastForDraw(draw.hash);
     }
 
     const pickColor = (index) => {
@@ -517,6 +627,7 @@ export default function Billboard(props) {
                 onPickColor={pickColor}
             />
             {tooltipVisible && <Tooltip mousePosition={mousePosition} hoveredNFT={hoveredNFT} billboardContract={billboardContract} />}
+            <ToastContainer position='top-right'/>
         </div>
     );
 }
