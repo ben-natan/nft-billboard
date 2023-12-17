@@ -56,17 +56,12 @@ function Tooltip(props) {
                     flexDirection: "column",
                     justifyContent: "start",
                     fontSize: "12px"}}>
-            {/* TODO: fetch informations */}
             <div style={{lineHeight: 1.5, marginBottom: "5px"}}>
                 <p style={{margin: 0, color: 'white', fontWeight: 'bold'}}>Owner:</p>
                 <p style={{margin: 0, color: 'white'}}>
                     {owner.toString().substring(0, 20)}
                 </p>
             </div>
-            {/* <div style={{lineHeight: 1.5, marginTop: "5px", marginBottom: "5px"}}>
-                <p style={{margin: 0, color: 'white', fontWeight: 'bold'}}>Last minted for:</p>
-                <p style={{margin: 0, color: 'white'}}>0.34 ETH</p>
-            </div> */}
             <div style={{lineHeight: 1.5, marginTop: "5px"}}>
                 <p style={{margin: 0, color: 'white', fontWeight: 'bold'}}>Size:</p>
                 <p style={{margin: 0, color: 'white'}}>{(hoveredNFT.endX - hoveredNFT.startX) / CELL_WIDTH * (hoveredNFT.endY - hoveredNFT.startY) / CELL_WIDTH} pixels</p>
@@ -496,9 +491,7 @@ export default function Billboard(props) {
             startY,
             endY,
             {
-                // TODO: not sure why pricePerPixel.mul(size) throws "unsufficient intrinsec funds",
-                // and +10 does not work for big (> 20 pixels) selections
-                value: pricePerPixel.mul(size + 10),
+                value: pricePerPixel.mul(size),
                 gasLimit: 5999999,
                 from: currentAccount
             });
@@ -575,7 +568,6 @@ export default function Billboard(props) {
 
     const onSubmitDraw = async () => {
         const tokenId = nfts.findIndex((n) => n.startX == pickedOwnNFT.startX && n.startY == pickedOwnNFT.startY);
-        // TODO: send, and maybe just do a diff?
 
         const data = nfts[tokenId].data;
 

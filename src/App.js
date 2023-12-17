@@ -3,7 +3,7 @@ import './App.css';
 import { useEffect, useState } from 'react';
 import Billboard from './Billboard';
 
-export const contractAddress = '0x1e3DB9D9383B6C099d114283e86BfA7a44Cc0074';
+export const contractAddress = '0xd25f859374698ca88409d2e3B3E688FA45d491B2';
 
 function App() {
   const [currentAccount, setCurrentAccount] = useState(null);
@@ -11,19 +11,10 @@ function App() {
   const checkWalletIsConnected = async () => {
     const { ethereum } = window;
 
-    if (!ethereum) {
-      console.log("Metamask not installed");
-    } else {
-      console.log("Wallet exists");
-    }
-
     const accounts = await ethereum.request({ method: 'eth_accounts' });
 
     if (accounts.length !== 0) {
-      console.log("Found an account: ", accounts[0]);
       setCurrentAccount(accounts[0]);
-    } else {
-      console.log("No account found");
     }
   }
 
@@ -37,7 +28,6 @@ function App() {
 
     try {
       const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-      console.log("Found an account: ", accounts[0]);
       setCurrentAccount(accounts[0]);
     } catch (err) {
       console.error(err);
